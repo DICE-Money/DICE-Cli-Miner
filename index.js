@@ -24,12 +24,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-const modDICECalculator = require('./models/DICECalculator/DICECalculator.js');
 const modFs = require('fs');
+const modDICECalculator = require('./models/DICECalculator/DICECalculator.js');
 const modDICEUnit = require('./models/DICECalculator/DICEUnit.js');
+const modDigAddress = require('./models/AdressCalculator_3rd/DigitalAdressCalculator.js');
 
 var DICE = new modDICEUnit();
 var DiceCalculatorL = new modDICECalculator();
+var AddressGen = new modDigAddress();
 
 //Get arguments
 var args = process.argv.slice(2);
@@ -43,12 +45,17 @@ if (args[0] === "-c") {
     file = modFs.readFileSync(file, "utf8");
     DICE = DICE.from(file);
 
+} else if (args[0] === "-g") {
+    console.log("Generating Address to: "+ file);
+    console.log("Public Address to: "+ AddressGen.privateKey);
+    console.log("Private Keys to: "+ AddressGen.digitalAdress);
+    modFs.writeFile(file, JSON.stringify(AddressGen, null, 0), 'utf-8', endOfProgram);
 } else {
     console.log("Invalid Arguments!");
     console.log("example: program.exe -c .\\test.json addrOp addrMin validZeroes");
 }
 
-if (1 < args.length) {
+if (args[0] === "-c" || args[0] === "-v") {
     console.log("Hash value of Prototype = " + DiceCalculatorL.getSHA3OfUnit(DICE));
 }
 
