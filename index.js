@@ -47,8 +47,8 @@ if (args[0] === "-c") {
 
 } else if (args[0] === "-g") {
     console.log("Generating Address to: "+ file);
-    console.log("Public Address to: "+ AddressGen.privateKey);
-    console.log("Private Keys to: "+ AddressGen.digitalAdress);
+    console.log("Public Address: "+ AddressGen.privateKey);
+    console.log("Private Key: "+ AddressGen.digitalAdress);
     modFs.writeFile(file, JSON.stringify(AddressGen, null, 0), 'utf-8', endOfProgram);
 } else {
     console.log("Invalid Arguments!");
