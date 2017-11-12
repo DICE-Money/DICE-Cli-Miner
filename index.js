@@ -32,23 +32,39 @@ const modDigAddress = require('./models/AdressCalculator_3rd/DigitalAdressCalcul
 var DICE = new modDICEUnit();
 var DiceCalculatorL = new modDICECalculator();
 var AddressGen = new modDigAddress();
+var time = new Date();
 
 //Get arguments
 var args = process.argv.slice(2);
 var file = args[1];
 
 if (args[0] === "-c") {
+
+    //Inform for generetion
     console.log("Calculate new DICE Unit with Level - " + args[4] + " zeroes");
+
+    //Start measuring
+    time = new Date();
+
+    //Generating new DICE Unit
     DICE = DiceCalculatorL.getValidDICE(args[2], args[3], args[4]);
+
+    //Stop measuring
+    time = new Date() - time; //in miliseconds
+
+    //Print Time
+    console.log("Current spent time: " + time + "ms");
+
+    //Write to File
     modFs.writeFile(file, JSON.stringify(DICE.toHexStringifyUnit(), null, 0), 'utf-8', endOfProgram);
 } else if (args[0] === "-v") {
     file = modFs.readFileSync(file, "utf8");
     DICE = DICE.from(file);
 
 } else if (args[0] === "-g") {
-    console.log("Generating Address to: "+ file);
-    console.log("Public Address: "+ AddressGen.privateKey);
-    console.log("Private Key: "+ AddressGen.digitalAdress);
+    console.log("Generating Address to: " + file);
+    console.log("Public Address: " + AddressGen.privateKey);
+    console.log("Private Key: " + AddressGen.digitalAdress);
     modFs.writeFile(file, JSON.stringify(AddressGen, null, 0), 'utf-8', endOfProgram);
 } else {
     console.log("Invalid Arguments!");
