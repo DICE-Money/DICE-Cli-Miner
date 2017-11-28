@@ -27,51 +27,64 @@
 const modFs = require('fs');
 const modDICECalculator = require('./models/DICECalculator/DICECalculator.js');
 const modDICEUnit = require('./models/DICECalculator/DICEUnit.js');
-const modDigAddress = require('./models/AdressCalculator_3rd/DigitalAdressCalculator.js');
+const modDigAddress = require('./models/AddressCalculator/DigitalAdressCalculator_ECDH.js');
+const modDICEValue = require('./models/DICEValue/DICEValue.js');
+
 
 var DICE = new modDICEUnit();
 var DiceCalculatorL = new modDICECalculator();
+var DICEValue = new modDICEValue();
 var AddressGen = new modDigAddress();
 var time = new Date();
-
 //Get arguments
 var args = process.argv.slice(2);
 var file = args[1];
-
 if (args[0] === "-c") {
 
-    //Inform for generetion
+//Inform for generetion
     console.log("Calculate new DICE Unit with Level - " + args[4] + " zeroes");
-
     //Start measuring
     time = new Date();
-
     //Generating new DICE Unit
     DICE = DiceCalculatorL.getValidDICE(args[2], args[3], args[4]);
-
     //Stop measuring
     time = new Date() - time; //in miliseconds
 
     //Print Time
     console.log("Current spent time: " + time + "ms");
-
     //Write to File
     modFs.writeFile(file, JSON.stringify(DICE.toHexStringifyUnit(), null, 0), 'utf-8', endOfProgram);
+} else if (args[0] === "-h") {
+    file = modFs.readFileSync(file, "utf8");
+    DICE = DICE.from(file);
+} else if (args[0] === "-g") {
+    AddressGen.CalculateKeyAdressPair();
+    console.log("Generating Address to: " + file);
+    console.log("Public Address: " + AddressGen.getPrivateKey('bs58'));
+    console.log("Private Key: " + AddressGen.getDigitalAdress('bs58'));
+    AddressGen.privateKey = AddressGen.getPrivateKey('bs58');
+    AddressGen.digitalAdress = AddressGen.getDigitalAdress('bs58');
+    
+    modFs.writeFile(file, JSON.stringify(AddressGen, null, 0), 'utf-8', endOfProgram);
 } else if (args[0] === "-v") {
+    //Read Unit from file
     file = modFs.readFileSync(file, "utf8");
     DICE = DICE.from(file);
 
-} else if (args[0] === "-g") {
-    console.log("Generating Address to: " + file);
-    console.log("Public Address: " + AddressGen.privateKey);
-    console.log("Private Key: " + AddressGen.digitalAdress);
-    modFs.writeFile(file, JSON.stringify(AddressGen, null, 0), 'utf-8', endOfProgram);
+    //Set DICE Unit for test
+    DICEValue.setDICEProtoFromUnit(DICE);
+    DICEValue.calculateValue(1, args[2]);
+
+    //Print Number of zeroes and value
+    console.log("Number of zeros (b): " + DICEValue.getZeroes());
+    console.log("DICE Unit value: " + DICEValue.unitValue);
+    console.log("DICE Unit value: " + DICEValue.unitValue * 1024 + "/");
 } else {
     console.log("Invalid Arguments!");
     console.log("example: program.exe -c .\\test.json addrOp addrMin validZeroes");
 }
 
-if (args[0] === "-c" || args[0] === "-v") {
+if (args[0] === "-c" || args[0] === "-h" || args[0] === "-v") {
     console.log("Hash value of Prototype = " + DiceCalculatorL.getSHA3OfUnit(DICE));
 }
 
