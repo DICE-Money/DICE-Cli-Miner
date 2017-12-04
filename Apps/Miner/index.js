@@ -63,7 +63,12 @@ DNS.initializeDB('../../models/DNSBinder/dns.json', 'json');
 
 //Create connection
 var serverData = DNS.lookup(args[1]);
-TCPClient.create("client", serverData.ip, serverData.port);
+TCPClient.create("client", serverData.ip, serverData.port, () => {
+    console.log("There is no Active server!");
+    currentState = minerStates.eExit;
+});
+
+var isRequestTransmitted = false;
 
 //Start scheduled program
 var scheduler = setInterval(main, 10);
@@ -71,9 +76,9 @@ var scheduler = setInterval(main, 10);
 function main() {
     switch (currentState) {
         case minerStates.eStep1:
-            if (readZeroes(args)) {
-                currentState = minerStates.eStep2;
-            }
+            args[3] = requestToServer(args[2],
+                    () => TCPClient.Request("Zeroes", args[2]),
+                    () => currentState = minerStates.eStep2);
             break;
 
         case minerStates.eStep2:
@@ -82,18 +87,15 @@ function main() {
             break;
 
         case minerStates.eStep3:
-            if (validateDICEUnit(args)) {
-                if (DICEValue.unitValue !== "IvalidDICE") {
-                    currentState = minerStates.eStep4;
-                } else {
-                    //Return to first state
-                    currentState = minerStates.eStep1;
-                    
-                    //Clean buffer
-                    TCPClient.cleanByAddress(args[2]);
-                }
-            }
-
+            requestToServer(args[2],
+                    (addr) => TCPClient.Request("Validation", addr, DICE.toHexStringifyUnit()),
+                    (receivedData) =>
+            {
+                DICEValue.setDICEProtoFromUnit(DICE);
+                DICEValue.calculateValue(receivedData.k, receivedData.N);
+                console.log(DICEValue.unitValue);
+                currentState = DICEValue.unitValue === "InvalidDICE" ? minerStates.eStep1 : minerStates.eStep4;
+            });
             break;
 
         case minerStates.eStep4:
@@ -111,16 +113,6 @@ function main() {
     }
 }
 
-function readZeroes(args) {
-    var isReady = false;
-    TCPClient.GET("Zeroes", args[2]);
-    data = TCPClient.readByAddress(args[2]);
-    if (data !== undefined) {
-        args[3] = data;
-        isReady = true;
-    }
-    return isReady;
-}
 
 function calculateDICE(args) {
     //Inform for generetion
@@ -140,22 +132,35 @@ function calculateDICE(args) {
 }
 
 function saveToFile() {
+    var fileIncrementor = 0;
+
+    while (modFs.existsSync(file)) {
+        file += "." + fileIncrementor;
+        fileIncrementor++;
+    }
+        
     //Inform for saving
     console.log("Saving generated Unit to ", file);
+    
+//    //Write to File
+//    modFs.writeFileSync(file, JSON.stringify(DICE.toHexStringifyUnit(), null, 0), 'utf-8');
 
     //Write to File
-    modFs.writeFileSync(file, JSON.stringify(DICE.toHexStringifyUnit(), null, 0), 'utf-8');
+    modFs.writeFileSync(file, DICE.toBS58());
 }
 
-function validateDICEUnit(args) {
-    var isReady = false;
-    TCPClient.GET("Validation", args[2], DICE.toHexStringifyUnit());
-    data = TCPClient.readByAddress(args[2]);
-    if (data !== undefined) {
-        DICEValue.setDICEProtoFromUnit(DICE);
-        DICEValue.calculateValue(data.k, data.N);
-        console.log(DICEValue.unitValue);
-        isReady = true;
+function requestToServer(addrMiner, activate, deactivate) {
+    var receivedData;
+    if (false === isRequestTransmitted) {
+        activate(addrMiner);
+        isRequestTransmitted = true;
+    } else {
+        receivedData = TCPClient.readByAddress(addrMiner);
+        if (receivedData !== undefined) {
+            isReady = true;
+            isRequestTransmitted = false;
+            deactivate(receivedData);
+        }
     }
-    return isReady;
+    return receivedData;
 }
