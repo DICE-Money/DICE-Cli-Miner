@@ -52,29 +52,28 @@ var cCONST = {
 };
 
 // Local Types
-var appStates =
-        {
-            //Mining States
-            eStep_InitTCPConnection: 0,
-            eStep_ConnectToServer: 1,
-            eStep_RequestZeroes: 2,
-            eStep_CalculateDICE: 3,
-            eStep_RequestValidation: 4,
-            eStep_SendPrototype: 5,
+var appStates = {
+    //Mining States
+    eStep_InitTCPConnection: 0,
+    eStep_ConnectToServer: 1,
+    eStep_RequestZeroes: 2,
+    eStep_CalculateDICE: 3,
+    eStep_RequestValidation: 4,
+    eStep_SendPrototype: 5,
 
-            //Generating Addr & Key Pair
-            eStep_GenerateAddr: 6,
-            eStep_SaveKeyPairToFile: 7,
+    //Generating Addr & Key Pair
+    eStep_GenerateAddr: 6,
+    eStep_SaveKeyPairToFile: 7,
 
-            //Validatig DICE Value
-            eStep_ValidateDICE: 8,
+    //Validatig DICE Value
+    eStep_ValidateDICE: 8,
 
-            //Calculate SHA3 Of Unit
-            eStep_SHAOfUnit: 9,
+    //Calculate SHA3 Of Unit
+    eStep_SHAOfUnit: 9,
 
-            eExit_FromApp: 10,
-            eCount: 11
-        };
+    eExit_FromApp: 10,
+    eCount: 11
+};
 
 //Local static Data
 var Args = {
@@ -99,9 +98,6 @@ var args = process.argv.slice(2);
 //Decide how to opperate the application
 decideArgs(args);
 
-//Get Data from input file
-getDataFromInput();
-
 //Start scheduled program
 var scheduler = setInterval(main10ms, 10);
 
@@ -119,8 +115,8 @@ function main10ms() {
             break;
 
         case appStates.eStep_RequestZeroes:
-            zeroes = requestToServer(keyPair.digitalAdress,
-                    () => TCPClient.Request("GET Zeroes", keyPair.digitalAdress),
+            zeroes = requestToServer(keyPair.digitalAddress,
+                    () => TCPClient.Request("GET Zeroes", keyPair.digitalAddress),
                     () => currentState = appStates.eStep_CalculateDICE);
             break;
 
@@ -130,10 +126,9 @@ function main10ms() {
             break;
 
         case appStates.eStep_RequestValidation:
-            requestToServer(keyPair.digitalAdress,
+            requestToServer(keyPair.digitalAddress,
                     (addr) => TCPClient.Request("GET Validation", addr),
-                    (receivedData) =>
-            {
+                    (receivedData) => {
                 receivedData = JSON.parse(receivedData);
                 DICEValue.setDICEProtoFromUnit(DICE);
                 DICEValue.calculateValue(receivedData.k, receivedData.N);
@@ -143,17 +138,26 @@ function main10ms() {
             break;
 
         case appStates.eStep_SendPrototype:
-            requestToServer(keyPair.digitalAdress,
-                    (addr) =>
-            {
+            requestToServer(keyPair.digitalAddress,
+                    (addr) => {
                 saveDICEToFile();
                 var encryptedData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(modBS58.decode(Args.addrOp)));
                 TCPClient.Request("SET Prototype", addr, encryptedData);
             },
-                    () =>
-            {
+                    () => {
                 currentState = appStates.eStep_SHAOfUnit;
             });
+            break;
+
+        case appStates.eStep_GenerateAddr:
+            console.log("Generating new Digital Address and Key Pair");
+            saveKeyPair();
+            currentState = appStates.eExit_FromApp;
+            break;
+
+        case appStates.eStep_ValidateDICE:
+            validateDICEFromFile();
+            currentState = appStates.eStep_SHAOfUnit;
             break;
 
         case appStates.eStep_SHAOfUnit:
@@ -175,7 +179,7 @@ function main10ms() {
 
             break;
         default:
-            throw "Application has Inproper state !";
+            throw "Application has Improper state !";
             break;
     }
 }
@@ -184,7 +188,7 @@ function main10ms() {
 // Local Help function
 //#############################################################################
 
-//General Use Functions to work properly with server
+//General Use Function to work properly with server
 function requestToServer(addrMiner, activate, deactivate) {
     var receivedData;
     if (false === isRequestTransmitted) {
@@ -192,10 +196,10 @@ function requestToServer(addrMiner, activate, deactivate) {
         isRequestTransmitted = true;
     } else {
         receivedData = TCPClient.readByAddress(addrMiner);
-        receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(modBS58.decode(Args.addrOp)));
         if (receivedData !== undefined) {
             isReady = true;
             isRequestTransmitted = false;
+            receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(modBS58.decode(Args.addrOp)));
             deactivate(receivedData);
         }
     }
@@ -211,7 +215,8 @@ function calculateDICE(Args) {
     time = new Date();
 
     //Generating new DICE Unit
-    DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAdress, zeroes);
+    DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
+
     //Stop measuring
     time = new Date() - time; //in miliseconds
 
@@ -237,6 +242,9 @@ function saveDICEToFile() {
 
     //Write to File
     modFs.writeFileSync(Args.fileOutput, DICE.toBS58());
+
+    //Write to File
+    modFs.writeFileSync(Args.fileOutput+".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');   
 }
 
 //Calculate Hash
@@ -253,6 +261,9 @@ function decideArgs(args) {
             Args.fileInput = args[1];
             Args.fileOutput = args[2];
             Args.addrOp = args[3];
+
+            //Get Data from input file
+            getKeyPair();
 
             //Init current state
             currentState = appStates.eStep_InitTCPConnection;
@@ -301,12 +312,51 @@ function initTcpConnection() {
 }
 
 //Read key pair from file
-function getDataFromInput() {
+function getKeyPair() {
     if (undefined !== Args.fileInput) {
         var file = modFs.readFileSync(Args.fileInput, "utf8");
         keyPair = JSON.parse(file);
-        encryptor = new modEnc(Buffer.from(modBS58.decode(keyPair.privateKey)), 'sect131r1', 2);
+        encryptor = new modEnc(modBS58.decode(keyPair.privateKey), 'sect131r1', 2);
     } else {
         //Nothing
     }
 }
+
+//Write key pair from file
+function saveKeyPair() {
+    if (undefined !== Args.fileOutput) {
+        //Calculate new pair
+        AddressGen.CalculateKeyAdressPair();
+
+        //Save to local var
+        keyPair.privateKey = AddressGen.getPrivateKey('bs58');
+        keyPair.digitalAddress = AddressGen.getDigitalAdress('bs58');
+
+        //Print newly generated pair
+        console.log("Base 58 Key:  ", keyPair.privateKey);
+        console.log("Base 58 Addr: ", keyPair.digitalAddress);
+
+        //Print newly generated pair
+        console.log("Base Hex Key:  ", AddressGen.getPrivateKey('hex'));
+        console.log("Base Hex Addr: ", AddressGen.getDigitalAdress('hex'));
+
+        //Save to file
+        modFs.writeFileSync(Args.fileOutput, JSON.stringify(keyPair), 'utf8');
+    } else {
+        //Nothing
+    }
+}
+
+//Validating DICE Unit from file in Base 58 encoding
+function validateDICEFromFile() {
+    var file = modFs.readFileSync(Args.fileInput, "utf8");
+    DICE = DICE.fromBS58(file);
+
+    console.log("Unit Content in HEX");
+    console.log("Operator Address: ", Buffer.from(DICE.addrOperator.buffer).toString('hex'));
+    console.log("Miner Address: ", Buffer.from(DICE.addrMiner.buffer).toString('hex'));
+    console.log("Traling Zeroes: ", Buffer.from(DICE.validZeros.buffer).toString('hex'));
+    console.log("Time: ", Buffer.from(DICE.swatchTime.buffer).toString('hex'));
+    console.log("Payload: ", Buffer.from(DICE.payLoad.buffer).toString('hex'));
+}
+   
