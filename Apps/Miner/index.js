@@ -39,11 +39,11 @@ const modEnc = require('../../models/Encryptor/Encryptor.js');
 //Create instances of the following models
 var DICE = new modDICEUnit();
 var DICEProto = new modDICEPrototype();
-var DiceCalculatorL = new modDICECalculator();
+var DiceCalculatorL = new modDICECalculator("c");
 var DNS = new modDNSBinder();
 var AddressGen = new modDigAddress();
 var TCPClient = new modTCPWorker();
-var DICEValue = new modDICEValue();
+var DICEValue = new modDICEValue(DiceCalculatorL);
 var Time = new Date();
 
 //Local Constants
@@ -71,17 +71,24 @@ var appStates = {
     //Calculate SHA3 Of Unit
     eStep_SHAOfUnit: 9,
 
-    eExit_FromApp: 10,
-    eCount: 11
+    //Trading
+    eStep_CurrentOwnerTrade: 10,
+    eStep_NewOwnerTrade: 11,
+
+    eExit_FromApp: 12,
+    eCount: 13
 };
 
 //Local static Data
 var Args = {
     command: undefined,
     fileInput: undefined,
+    diceUnit: undefined,
     fileOutput: undefined,
-    addrOp: undefined
+    addrOp: undefined,
+    addrMin: undefined
 };
+
 var isRequestTransmitted = false;
 var currentState = undefined;
 var keyPair = {};
@@ -99,8 +106,8 @@ var args = process.argv.slice(2);
 decideArgs(args);
 
 //Start scheduled program
-var scheduler = setInterval(main10ms, 10);
-
+var scheduler_10ms = setInterval(main10ms, 10);
+var scheduler_1s = setInterval(main1s, 1000);
 
 //#############################################################################
 // Main 10 ms function - Periodic function
@@ -165,8 +172,20 @@ function main10ms() {
             currentState = appStates.eExit_FromApp;
             break;
 
-        case appStates.eExit_FromApp:
+        case appStates.eStep_CurrentOwnerTrade:
+            var hash = curOwnerTrade();
+            console.log(hash);
+            currentState = appStates.eExit_FromApp;
+            break;
 
+        case appStates.eStep_NewOwnerTrade:
+            var hash = newOwnerTrade();
+            console.log(hash);
+            currentState = appStates.eExit_FromApp;
+            break;
+
+
+        case appStates.eExit_FromApp:
             //If Connection was established
             try {
                 TCPClient.close();
@@ -175,15 +194,26 @@ function main10ms() {
 
             //Exit From Application and stop Shcheduler
             console.log("Exit from Program");
-            clearInterval(scheduler);
-
+            clearInterval(scheduler_10ms);
+            clearInterval(scheduler_1s);
             break;
         default:
             throw "Application has Improper state !";
-            break;
     }
 }
 
+function main1s()
+{
+    switch (currentState) {
+        case appStates.eStep_CalculateDICE:
+            console.log("SHA3 Speed: " + DiceCalculatorL.getSHA3Count() + " hash/s");
+            break;
+
+        default:
+
+            break;
+    }
+}
 //#############################################################################
 // Local Help function
 //#############################################################################
@@ -212,16 +242,13 @@ function calculateDICE(Args) {
     console.log("Calculate new DICE Unit with Level - " + zeroes + " zeroes");
 
     //Start measuring
-    time = new Date();
+    console.time("Time Used");
 
     //Generating new DICE Unit
     DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
 
     //Stop measuring
-    time = new Date() - time; //in miliseconds
-
-    //Print Time
-    console.log("Current spent time: " + time + "ms");
+    console.timeEnd("Time Used");
 }
 
 //Save to File 
@@ -244,7 +271,7 @@ function saveDICEToFile() {
     modFs.writeFileSync(Args.fileOutput, DICE.toBS58());
 
     //Write to File
-    modFs.writeFileSync(Args.fileOutput+".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');   
+    modFs.writeFileSync(Args.fileOutput + ".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');
 }
 
 //Calculate Hash
@@ -290,16 +317,35 @@ function decideArgs(args) {
             currentState = appStates.eStep_GenerateAddr;
             break;
 
+        case "-tc": // Miner1 -> Miner2
+            Args.fileInput = args[1];
+            Args.diceUnit = args[2];
+            Args.fileOutput = args[3];
+            Args.addrMin = args[4];
+            Args.addrOp = args[5];
+
+            //Init current state
+            currentState = appStates.eStep_CurrentOwnerTrade;
+            break;
+
+        case "-tn": // Miner2
+            Args.fileInput = args[1];
+            Args.diceUnit = args[2];
+            Args.addrOp = args[4];
+
+            //Init current state
+            currentState = appStates.eStep_NewOwnerTrade;
+            break;
+
         default:
             throw "Invalid Command";
-            break;
     }
 }
 
 //Init TCP Connection
 function initTcpConnection() {
     //Initialize DNS
-    DNS.initializeDB('../../models/DNSBinder/dns.json', 'json');
+    DNS.initializeDB('../DNS_DB/dns.json', 'json');
 
     //Requst DNS Binder to get IP and PORT
     var serverData = DNS.lookup(Args.addrOp);
@@ -359,4 +405,57 @@ function validateDICEFromFile() {
     console.log("Time: ", Buffer.from(DICE.swatchTime.buffer).toString('hex'));
     console.log("Payload: ", Buffer.from(DICE.payLoad.buffer).toString('hex'));
 }
-   
+
+//Miner 1 sends unit to new owner
+function curOwnerTrade() {
+
+    //Get KeyPair
+    getKeyPair();
+
+    //Read DICE Unit from FS
+    var DiceFile = modFs.readFileSync(Args.diceUnit, "utf8");
+
+    //Logic for application is to trade an already mined unit which is stored in FS
+    DICE = DICE.fromBS58(DiceFile);
+
+    //Encrypt unit which is in BS58 with new owner address
+    var encData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(modBS58.decode(Args.addrMin)));
+
+    console.log(DICE.toBS58());
+
+    //Hash of the Unit
+    var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
+
+    //Preapare data for storing
+    var fsData = {};
+    fsData['addr'] = keyPair.digitalAddress;
+    fsData['unit'] = modBS58.encode(encData);
+
+    //Save to file
+    modFs.writeFileSync(Args.fileOutput, JSON.stringify(fsData), 'utf8');
+
+    return hashOfUnit;
+}
+
+//Miner 2 receives
+function newOwnerTrade() {
+
+    //Get KeyPair
+    getKeyPair();
+
+    //Read DICE Unit from FS
+    var DiceFileJSON = modFs.readFileSync(Args.diceUnit, "utf8");
+
+    var DiceFile = JSON.parse(DiceFileJSON);
+
+    //Encrypt Hash with new owner address
+    var decoded = encryptor.decryptDataPublicKey(modBS58.decode(DiceFile.unit), Buffer.from(modBS58.decode(DiceFile.addr)));
+
+    //Logic for application is to trade an already mined unit which is stored in FS
+    DICE = DICE.fromBS58(decoded.toString());
+
+    //Hash of the Unit
+    var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
+
+    return hashOfUnit;
+}
