@@ -74,9 +74,14 @@ var appStates = {
     //Trading
     eStep_CurrentOwnerTrade: 10,
     eStep_NewOwnerTrade: 11,
+    eStep_CurrentOwnerClaimToServer: 12,
+    eStep_NewOwnerClaimToServer: 13,
 
-    eExit_FromApp: 12,
-    eCount: 13
+    //Idle
+    eStep_IDLE: 14,
+
+    eExit_FromApp: 15,
+    eCount: 16
 };
 
 //Local static Data
@@ -147,11 +152,12 @@ function main10ms() {
         case appStates.eStep_SendPrototype:
             requestToServer(keyPair.digitalAddress,
                     (addr) => {
-                saveDICEToFile();
-                var encryptedData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(modBS58.decode(Args.addrOp)));
+                saveDICEToFile(Args.fileOutput);
+                var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(modBS58.decode(Args.addrOp)));
                 TCPClient.Request("SET Prototype", addr, encryptedData);
             },
-                    () => {
+                    (response) => {
+                printServerReturnData(response);
                 currentState = appStates.eStep_SHAOfUnit;
             });
             break;
@@ -172,17 +178,52 @@ function main10ms() {
             currentState = appStates.eExit_FromApp;
             break;
 
+//Trading
         case appStates.eStep_CurrentOwnerTrade:
-            var hash = curOwnerTrade();
-            console.log(hash);
-            currentState = appStates.eExit_FromApp;
+            initTcpConnection();
+            curOwnerTrade();
+            currentState = appStates.eStep_CurrentOwnerClaimToServer;
             break;
 
         case appStates.eStep_NewOwnerTrade:
-            var hash = newOwnerTrade();
-            console.log(hash);
-            currentState = appStates.eExit_FromApp;
+            initTcpConnection();
+            newOwnerTrade();
+            currentState = appStates.eStep_NewOwnerClaimToServer;
             break;
+
+        case appStates.eStep_CurrentOwnerClaimToServer:
+            requestToServer(keyPair.digitalAddress,
+                    (addr) => {
+                DICEValue.setDICEProtoFromUnit(DICE);
+                var claimData = {};
+                claimData["newOwner"] = Args.addrMin;
+                claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(modBS58.decode(Args.addrOp)));
+                TCPClient.Request("SET CurrentOwnerClaim", addr, encryptedData);
+            },
+                    (response) => {
+                printServerReturnData(response);
+                currentState = appStates.eExit_FromApp;
+            });
+            break;
+
+        case appStates.eStep_NewOwnerClaimToServer:
+            requestToServer(keyPair.digitalAddress,
+                    (addr) => {
+                DICEValue.setDICEProtoFromUnit(DICE);
+                var claimData = {};
+                claimData["newOwner"] = keyPair.digitalAddress;
+                claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(modBS58.decode(Args.addrOp)));
+                TCPClient.Request("SET NewOwnerClaim", addr, encryptedData);
+            },
+                    (response) => {
+                printServerReturnData(response);
+                saveDICEToFile(Args.fileInput + "decompressed.txt")
+                currentState = appStates.eExit_FromApp;
+            });
+            break;
+//End of Trading
 
 
         case appStates.eExit_FromApp:
@@ -252,33 +293,31 @@ function calculateDICE(Args) {
 }
 
 //Save to File 
-function saveDICEToFile() {
+function saveDICEToFile(fileOutput) {
     var fileIncrementor = 0;
-    var testFile = Args.fileOutput;
+    var testFile = fileOutput;
 
     while (modFs.existsSync(testFile)) {
-        testFile = Args.fileOutput + "." + fileIncrementor;
+        testFile = fileOutput + "." + fileIncrementor;
         fileIncrementor++;
     }
 
     //Save new name of file
-    Args.fileOutput = testFile;
+    fileOutput = testFile;
 
     //Inform for saving
-    console.log("Saving generated Unit to ", Args.fileOutput);
+    console.log("Saving generated Unit to ", fileOutput);
 
     //Write to File
-    modFs.writeFileSync(Args.fileOutput, DICE.toBS58());
+    modFs.writeFileSync(fileOutput, DICE.toBS58());
 
     //Write to File
-    modFs.writeFileSync(Args.fileOutput + ".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');
+    modFs.writeFileSync(fileOutput + ".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');
 }
 
 //Calculate Hash
 function hashOfUnit() {
-    if (args[0] === "-c" || args[0] === "-h" || args[0] === "-v") {
-        console.log("Hash value of Prototype = " + DiceCalculatorL.getSHA3OfUnit(DICE));
-    }
+    console.log("Hash value of Prototype: " + DiceCalculatorL.getSHA3OfUnit(DICE));
 }
 
 //Decide arguments by input command
@@ -331,7 +370,7 @@ function decideArgs(args) {
         case "-tn": // Miner2
             Args.fileInput = args[1];
             Args.diceUnit = args[2];
-            Args.addrOp = args[4];
+            Args.addrOp = args[3];
 
             //Init current state
             currentState = appStates.eStep_NewOwnerTrade;
@@ -421,9 +460,7 @@ function curOwnerTrade() {
     //Encrypt unit which is in BS58 with new owner address
     var encData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(modBS58.decode(Args.addrMin)));
 
-    console.log(DICE.toBS58());
-
-    //Hash of the Unit
+    //Hash of Unit
     var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
 
     //Preapare data for storing
@@ -432,7 +469,7 @@ function curOwnerTrade() {
     fsData['unit'] = modBS58.encode(encData);
 
     //Save to file
-    modFs.writeFileSync(Args.fileOutput, JSON.stringify(fsData), 'utf8');
+    modFs.writeFileSync(Args.fileOutput, modBS58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
 
     return hashOfUnit;
 }
@@ -446,7 +483,8 @@ function newOwnerTrade() {
     //Read DICE Unit from FS
     var DiceFileJSON = modFs.readFileSync(Args.diceUnit, "utf8");
 
-    var DiceFile = JSON.parse(DiceFileJSON);
+    //Parse file from object
+    var DiceFile = JSON.parse(modBS58.decode(DiceFileJSON));
 
     //Encrypt Hash with new owner address
     var decoded = encryptor.decryptDataPublicKey(modBS58.decode(DiceFile.unit), Buffer.from(modBS58.decode(DiceFile.addr)));
@@ -454,8 +492,20 @@ function newOwnerTrade() {
     //Logic for application is to trade an already mined unit which is stored in FS
     DICE = DICE.fromBS58(decoded.toString());
 
-    //Hash of the Unit
+    //Hash of Unit
     var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
 
     return hashOfUnit;
+}
+
+function printServerReturnData(data) {
+    var response = JSON.parse(data);
+
+    //Print data
+    console.log("\nServer Response Message")
+    console.log(response.status.toString());
+    console.log("Current Owner: ", response.data.curOwner);
+    console.log("DICE Value: ", response.data.diceValue);
+    console.log("Hash value of Prototype: ", response.data.hash);
+    console.log("End of Server Response Message \n")
 }
