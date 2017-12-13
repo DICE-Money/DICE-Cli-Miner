@@ -26,7 +26,6 @@
 
 //Includes
 const modFs = require('fs');
-const modBS58 = require('bs58');
 const modDICECalculator = require('../../models/DICECalculator/DICECalculator.js');
 const modDICEUnit = require('../../models/DICECalculator/DICEUnit.js');
 const modDICEPrototype = require('../../models/DICECalculator/DICEPrototype.js');
@@ -35,6 +34,8 @@ const modDNSBinder = require('../../models/DNSBinder/DNSBinder.js');
 const modTCPWorker = require('../../models/TCP_IP/TcpWorker.js');
 const modDICEValue = require('../../models/DICEValue/DICEValue.js');
 const modEnc = require('../../models/Encryptor/Encryptor.js');
+const modBase58 = require('../../models/Base58/Base58.js');
+
 
 //Create instances of the following models
 var DICE = new modDICEUnit();
@@ -45,6 +46,7 @@ var AddressGen = new modDigAddress();
 var TCPClient = new modTCPWorker();
 var DICEValue = new modDICEValue(DiceCalculatorL);
 var Time = new Date();
+var modBS58 = new modBase58();
 
 //Local Constants
 var cCONST = {
@@ -72,16 +74,19 @@ var appStates = {
     eStep_SHAOfUnit: 9,
 
     //Trading
-    eStep_CurrentOwnerTrade: 10,
-    eStep_NewOwnerTrade: 11,
-    eStep_CurrentOwnerClaimToServer: 12,
-    eStep_NewOwnerClaimToServer: 13,
+    eStep_CurrentOwnerTrade: 11,
+    eStep_NewOwnerTrade: 12,
+    eStep_CurrentReleaseOwnerlessToServer: 13,
+
+    eStep_CurrentOwnerClaimToServer: 14,
+    eStep_NewOwnerClaimToServer: 15,
+    eStep_CurrentReleaseOwnerless: 16,
 
     //Idle
-    eStep_IDLE: 14,
+    eStep_IDLE: 17,
 
-    eExit_FromApp: 15,
-    eCount: 16
+    eExit_FromApp: 18,
+    eCount: 19
 };
 
 //Local static Data
@@ -187,9 +192,51 @@ function main10ms() {
 
         case appStates.eStep_NewOwnerTrade:
             initTcpConnection();
-            newOwnerTrade();
+            try {
+                newOwnerTrade();
+            } catch (e) {
+                // Try as normal DICE
+                // Read File to DICE Unit
+                var file = modFs.readFileSync(Args.diceUnit, "utf8");
+                DICE = DICE.fromBS58(file);
+
+                //Get key and address
+                getKeyPair();
+            }
             currentState = appStates.eStep_NewOwnerClaimToServer;
             break;
+
+        case appStates.eStep_CurrentReleaseOwnerless:
+            //Init Connections
+            initTcpConnection();
+
+            // Read File to DICE Unit
+            var file = modFs.readFileSync(Args.diceUnit, "utf8");
+            DICE = DICE.fromBS58(file);
+
+            //Get key and address
+            getKeyPair();
+
+            currentState = appStates.eStep_CurrentReleaseOwnerlessToServer;
+            break;
+
+        case appStates.eStep_CurrentReleaseOwnerlessToServer:
+            requestToServer(keyPair.digitalAddress,
+                    (addr) => {
+                var claimData = {};
+                //Set DICE Unit to Dice validatior
+                DICEValue.setDICEProtoFromUnit(DICE);
+
+                claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(modBS58.decode(Args.addrOp)));
+                TCPClient.Request("SET CurrentReleaseOwnerless", addr, encryptedData);
+            },
+                    (response) => {
+                printServerReturnData(response);
+                currentState = appStates.eExit_FromApp;
+            });
+            break;
+
 
         case appStates.eStep_CurrentOwnerClaimToServer:
             requestToServer(keyPair.digitalAddress,
@@ -219,7 +266,7 @@ function main10ms() {
             },
                     (response) => {
                 printServerReturnData(response);
-                saveDICEToFile(Args.fileInput + "decompressed.txt")
+                saveDICEToFile(Args.diceUnit + ".decompressed.txt");
                 currentState = appStates.eExit_FromApp;
             });
             break;
@@ -354,6 +401,15 @@ function decideArgs(args) {
 
             //Init current state
             currentState = appStates.eStep_GenerateAddr;
+            break;
+
+        case "-to": // Miner1 -> Ownerlesss
+            Args.fileInput = args[1];
+            Args.diceUnit = args[2];
+            Args.addrOp = args[3];
+
+            //Init current state
+            currentState = appStates.eStep_CurrentReleaseOwnerless;
             break;
 
         case "-tc": // Miner1 -> Miner2
@@ -502,10 +558,10 @@ function printServerReturnData(data) {
     var response = JSON.parse(data);
 
     //Print data
-    console.log("\nServer Response Message")
+    console.log("\nServer Response Message");
     console.log(response.status.toString());
     console.log("Current Owner: ", response.data.curOwner);
     console.log("DICE Value: ", response.data.diceValue);
     console.log("Hash value of Prototype: ", response.data.hash);
-    console.log("End of Server Response Message \n")
+    console.log("End of Server Response Message \n");
 }
