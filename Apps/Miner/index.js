@@ -40,7 +40,7 @@ const modBase58 = require('../../models/Base58/Base58.js');
 //Create instances of the following models
 var DICE = new modDICEUnit();
 var DICEProto = new modDICEPrototype();
-var DiceCalculatorL = new modDICECalculator("c");
+var DiceCalculatorL = new modDICECalculator("js");
 var DNS = new modDNSBinder();
 var AddressGen = new modDigAddress();
 var TCPClient = new modTCPWorker();
@@ -96,7 +96,9 @@ var Args = {
     diceUnit: undefined,
     fileOutput: undefined,
     addrOp: undefined,
-    addrMin: undefined
+    addrMin: undefined,
+    spareCommand: undefined,
+    cuda:undefined
 };
 
 var isRequestTransmitted = false;
@@ -104,6 +106,7 @@ var currentState = undefined;
 var keyPair = {};
 var zeroes = undefined;
 var encryptor = undefined;
+const pathToCudaApp = "../../models/DICECalculator/CUDA/DICECalculator.exe";
 
 //#############################################################################
 // Local sync logic of Application
@@ -138,8 +141,20 @@ function main10ms() {
             break;
 
         case appStates.eStep_CalculateDICE:
-            calculateDICE(Args);
-            currentState = appStates.eStep_RequestValidation;
+            requestToServer(keyPair.digitalAddress,
+                    (addr) => TCPClient.Request("GET Validation", addr),
+                    (receivedData) => {
+                receivedData = JSON.parse(receivedData);
+
+                //Calculate needed zeroes
+                if (Args.spareCommand !== undefined) {
+                    console.log("User settings for value of new DICE Unit: ", Args.spareCommand);
+                    zeroes = DICEValue.getZeroesFromN(Args.spareCommand, receivedData.N);
+                }
+
+                calculateDICE(Args);
+                currentState = appStates.eStep_RequestValidation;
+            });
             break;
 
         case appStates.eStep_RequestValidation:
@@ -327,16 +342,27 @@ function requestToServer(addrMiner, activate, deactivate) {
 //Function Generate DICE unit (Contains busy loop)
 function calculateDICE(Args) {
     //Inform for generetion
-    console.log("Calculate new DICE Unit with Level - " + zeroes + " zeroes");
-
+    console.log("Calculate new DICE Unit with Level - " + zeroes + " Operator Threshold");
+    var elapsedTime = 0;
+    var addrOpL = modBS58.decode(Args.addrOp).toString('hex');
+    var addrMinL = modBS58.decode(keyPair.digitalAddress).toString('hex');
     //Start measuring
-    console.time("Time Used");
+    console.time("time used");
+    Time = Date.now();
+    
+    //Generating new DICE Unit  
+    if (true === Args.cuda) {
+        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, pathToCudaApp, "cudaJsUnit.json");
+    }
+    else{
+        DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
+    }
 
-    //Generating new DICE Unit
-    DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
-
+    elapsedTime = Date.now() - Time;
     //Stop measuring
-    console.timeEnd("Time Used");
+    console.timeEnd("time used");
+
+//    console.log("SHA3 Speed: " + (DiceCalculatorL.getSHA3Count()/elapsedTime)*1000 + " hash/s");
 }
 
 //Save to File 
@@ -371,10 +397,17 @@ function hashOfUnit() {
 function decideArgs(args) {
     switch (args[0]) {
         case "-c":
+        case "-cCuda":
             Args.fileInput = args[1];
             Args.fileOutput = args[2];
             Args.addrOp = args[3];
-
+            Args.spareCommand = args[4];
+            
+            //Is it CUDA requested
+            if("-cCuda" === args[0]){
+                Args.cuda = true;
+            }
+            
             //Get Data from input file
             getKeyPair();
 
@@ -491,7 +524,13 @@ function saveKeyPair() {
 //Validating DICE Unit from file in Base 58 encoding
 function validateDICEFromFile() {
     var file = modFs.readFileSync(Args.fileInput, "utf8");
-    DICE = DICE.fromBS58(file);
+
+    //Read DICE Unit from file
+    try {
+        DICE = DICE.from(file);
+    } catch (e) {
+        DICE = DICE.fromBS58(file);
+    }
 
     console.log("Unit Content in HEX");
     console.log("Operator Address: ", Buffer.from(DICE.addrOperator.buffer).toString('hex'));
