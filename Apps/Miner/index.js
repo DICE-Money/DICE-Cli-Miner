@@ -35,7 +35,8 @@ const modTCPWorker = require('../../models/TCP_IP/TcpWorker.js');
 const modDICEValue = require('../../models/DICEValue/DICEValue.js');
 const modEnc = require('../../models/Encryptor/Encryptor.js');
 const modBase58 = require('../../models/Base58/Base58.js');
-
+const modeVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
+const modeVIEW_IF = require('../VIEW/VIEW_Interfaces.js');
 
 //Create instances of the following models
 var DICE = new modDICEUnit();
@@ -47,11 +48,6 @@ var TCPClient = new modTCPWorker();
 var DICEValue = new modDICEValue(DiceCalculatorL);
 var Time = new Date();
 var modBS58 = new modBase58();
-
-//Local Constants
-var cCONST = {
-
-};
 
 // Local Types
 var appStates = {
@@ -98,7 +94,7 @@ var Args = {
     addrOp: undefined,
     addrMin: undefined,
     spareCommand: undefined,
-    cuda:undefined
+    cuda: undefined
 };
 
 var isRequestTransmitted = false;
@@ -106,7 +102,8 @@ var currentState = undefined;
 var keyPair = {};
 var zeroes = undefined;
 var encryptor = undefined;
-const pathToCudaApp = "../../models/DICECalculator/CUDA/DICECalculator.exe";
+const pathToCudaApp = "../CUDA/DICECalculator.exe";
+var view_console = new modeVIEW(modeVIEW_IF.tableCodes, modeVIEW_IF.tablePorts, 'code');
 
 //#############################################################################
 // Local sync logic of Application
@@ -121,6 +118,7 @@ decideArgs(args);
 //Start scheduled program
 var scheduler_10ms = setInterval(main10ms, 10);
 var scheduler_1s = setInterval(main1s, 1000);
+view_console.setAllowed({ERROR: true, WARNING: true, USER_INFO: true, DEV_INFO: false});
 
 //#############################################################################
 // Main 10 ms function - Periodic function
@@ -148,7 +146,7 @@ function main10ms() {
 
                 //Calculate needed zeroes
                 if (Args.spareCommand !== undefined) {
-                    console.log("User settings for value of new DICE Unit: ", Args.spareCommand);
+                    view_console.printCode("USER_INFO", "UsInf0051", Args.spareCommand);
                     zeroes = DICEValue.getZeroesFromN(Args.spareCommand, receivedData.N);
                 }
 
@@ -164,7 +162,7 @@ function main10ms() {
                 receivedData = JSON.parse(receivedData);
                 DICEValue.setDICEProtoFromUnit(DICE);
                 DICEValue.calculateValue(receivedData.k, receivedData.N);
-                console.log("DICE Value: " + DICEValue.unitValue);
+                view_console.printCode("USER_INFO", "UsInf0052", DICEValue.unitValue);
                 currentState = (DICEValue.unitValue === "InvalidDICE" ? appStates.eStep_RequestZeroes : appStates.eStep_SendPrototype);
             });
             break;
@@ -183,7 +181,7 @@ function main10ms() {
             break;
 
         case appStates.eStep_GenerateAddr:
-            console.log("Generating new Digital Address and Key Pair");
+            view_console.printCode("USER_INFO", "UsInf0053");
             saveKeyPair();
             currentState = appStates.eExit_FromApp;
             break;
@@ -296,7 +294,7 @@ function main10ms() {
             }
 
             //Exit From Application and stop Shcheduler
-            console.log("Exit from Program");
+            view_console.printCode("USER_INFO", "UsInf0054");
             clearInterval(scheduler_10ms);
             clearInterval(scheduler_1s);
             break;
@@ -309,7 +307,7 @@ function main1s()
 {
     switch (currentState) {
         case appStates.eStep_CalculateDICE:
-            console.log("SHA3 Speed: " + DiceCalculatorL.getSHA3Count() + " hash/s");
+            view_console.printCode("USER_INFO", "UsInf0055", DiceCalculatorL.getSHA3Count());
             break;
 
         default:
@@ -342,27 +340,24 @@ function requestToServer(addrMiner, activate, deactivate) {
 //Function Generate DICE unit (Contains busy loop)
 function calculateDICE(Args) {
     //Inform for generetion
-    console.log("Calculate new DICE Unit with Level - " + zeroes + " Operator Threshold");
+    view_console.printCode("USER_INFO", "UsInf0056", zeroes);
     var elapsedTime = 0;
     var addrOpL = modBS58.decode(Args.addrOp).toString('hex');
     var addrMinL = modBS58.decode(keyPair.digitalAddress).toString('hex');
+
     //Start measuring
-    console.time("time used");
     Time = Date.now();
-    
+
     //Generating new DICE Unit  
     if (true === Args.cuda) {
         DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, pathToCudaApp, "cudaJsUnit.json");
-    }
-    else{
+    } else {
         DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
     }
-
-    elapsedTime = Date.now() - Time;
     //Stop measuring
-    console.timeEnd("time used");
+    elapsedTime = Date.now() - Time;
 
-//    console.log("SHA3 Speed: " + (DiceCalculatorL.getSHA3Count()/elapsedTime)*1000 + " hash/s");
+    view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
 }
 
 //Save to File 
@@ -379,7 +374,7 @@ function saveDICEToFile(fileOutput) {
     fileOutput = testFile;
 
     //Inform for saving
-    console.log("Saving generated Unit to ", fileOutput);
+    view_console.printCode("USER_INFO", "UsInf0057", fileOutput);
 
     //Write to File
     modFs.writeFileSync(fileOutput, DICE.toBS58());
@@ -390,7 +385,7 @@ function saveDICEToFile(fileOutput) {
 
 //Calculate Hash
 function hashOfUnit() {
-    console.log("Hash value of Prototype: " + DiceCalculatorL.getSHA3OfUnit(DICE));
+    view_console.printCode("USER_INFO", "UsInf0071", DiceCalculatorL.getSHA3OfUnit(DICE));
 }
 
 //Decide arguments by input command
@@ -402,12 +397,12 @@ function decideArgs(args) {
             Args.fileOutput = args[2];
             Args.addrOp = args[3];
             Args.spareCommand = args[4];
-            
+
             //Is it CUDA requested
-            if("-cCuda" === args[0]){
+            if ("-cCuda" === args[0]) {
                 Args.cuda = true;
             }
-            
+
             //Get Data from input file
             getKeyPair();
 
@@ -480,9 +475,9 @@ function initTcpConnection() {
 
     //Create connection
     TCPClient.create("client", serverData.ip, serverData.port, () => {
-        console.log("There is no Active server!");
+        view_console.printCode("ERROR", "Err0001");
         currentState = appStates.eExit_FromApp;
-    });
+    }, view_console);
 }
 
 //Read key pair from file
@@ -507,12 +502,12 @@ function saveKeyPair() {
         keyPair.digitalAddress = AddressGen.getDigitalAdress('bs58');
 
         //Print newly generated pair
-        console.log("Base 58 Key:  ", keyPair.privateKey);
-        console.log("Base 58 Addr: ", keyPair.digitalAddress);
+        view_console.printCode("USER_INFO", "UsInf0059", keyPair.privateKey);
+        view_console.printCode("USER_INFO", "UsInf0060", keyPair.digitalAddress);
 
         //Print newly generated pair
-        console.log("Base Hex Key:  ", AddressGen.getPrivateKey('hex'));
-        console.log("Base Hex Addr: ", AddressGen.getDigitalAdress('hex'));
+        view_console.printCode("DEV_INFO", "DevInf0111", AddressGen.getPrivateKey('hex'));
+        view_console.printCode("DEV_INFO", "DevInf0112", AddressGen.getDigitalAdress('hex'));
 
         //Save to file
         modFs.writeFileSync(Args.fileOutput, JSON.stringify(keyPair), 'utf8');
@@ -531,13 +526,15 @@ function validateDICEFromFile() {
     } catch (e) {
         DICE = DICE.fromBS58(file);
     }
+    Buffer.from(DICE.payLoad.buffer).toString('hex');
 
-    console.log("Unit Content in HEX");
-    console.log("Operator Address: ", Buffer.from(DICE.addrOperator.buffer).toString('hex'));
-    console.log("Miner Address: ", Buffer.from(DICE.addrMiner.buffer).toString('hex'));
-    console.log("Traling Zeroes: ", Buffer.from(DICE.validZeros.buffer).toString('hex'));
-    console.log("Time: ", Buffer.from(DICE.swatchTime.buffer).toString('hex'));
-    console.log("Payload: ", Buffer.from(DICE.payLoad.buffer).toString('hex'));
+    view_console.printCode("USER_INFO", "UsInf0061");
+    view_console.printCode("USER_INFO", "UsInf0062", Buffer.from(DICE.addrOperator.buffer).toString('hex'));
+    view_console.printCode("USER_INFO", "UsInf0063", Buffer.from(DICE.addrMiner.buffer).toString('hex'));
+    view_console.printCode("USER_INFO", "UsInf0064", Buffer.from(DICE.validZeros.buffer).toString('hex'));
+    view_console.printCode("USER_INFO", "UsInf0065", Buffer.from(DICE.swatchTime.buffer).toString('hex'));
+    view_console.printCode("USER_INFO", "UsInf0066", Buffer.from(DICE.payLoad.buffer).toString('hex'));
+
 }
 
 //Miner 1 sends unit to new owner
@@ -597,10 +594,10 @@ function printServerReturnData(data) {
     var response = JSON.parse(data);
 
     //Print data
-    console.log("\nServer Response Message");
-    console.log(response.status.toString());
-    console.log("Current Owner: ", response.data.curOwner);
-    console.log("DICE Value: ", response.data.diceValue);
-    console.log("Hash value of Prototype: ", response.data.hash);
-    console.log("End of Server Response Message \n");
+    view_console.printCode("USER_INFO", "UsInf0067");
+    view_console.printCode("USER_INFO", "UsInf0068", response.status.toString());
+    view_console.printCode("USER_INFO", "UsInf0069", response.data.curOwner);
+    view_console.printCode("USER_INFO", "UsInf0070", response.data.diceValue);
+    view_console.printCode("USER_INFO", "UsInf0071", response.data.hash);
+    view_console.printCode("USER_INFO", "UsInf0072");
 }
