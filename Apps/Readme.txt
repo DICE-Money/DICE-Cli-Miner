@@ -1,6 +1,15 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.20 CUDA Optimization - 31.12.2017
+- Implement CUDA Application Revision 1.00
+- Use JS SHA3 library instead C Library.
+- Update C Library to use raw bytes instead HEX
+- Add VIEW_Console model
+- Add VIEW_Console code table and port table
+- Add Excel for generation of code table
+- Integration Optimization for separated builds for Win/Mac/Linux (x86 and x64)
+
 Revision 1.11 Trading Ownerless - 14.12.2017
 - Included Trading support for ownerless DICE Units
 - Add support of user defined value for mining a new DICE Unit
@@ -35,6 +44,9 @@ Revision 1.0 Initial - 06.12.2017
 # How to Use
 ##############################################################################################################################################
 1. Example use of Miner Application 
+	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
+	Miner.exe -cCuda miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJ
+
 	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
 	Miner.exe -c miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJG
 	
