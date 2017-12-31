@@ -1,6 +1,13 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.11 Trading Ownerless - 14.12.2017
+- Included Trading support for ownerless DICE Units
+- Add support of user defined value for mining a new DICE Unit
+- Update execute.bat file with new commands
+- Bug Fixes 
+	- Console messages
+
 Revision 1.1 Trading - 10.12.2017
 - Included Trading support
 - Configuration of Server with file
@@ -31,6 +38,9 @@ Revision 1.0 Initial - 06.12.2017
 	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
 	Miner.exe -c miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJG
 	
+	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator> <DICE Value>
+	Miner.exe -c miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJG 2
+	
 	-Aplication-  -<command> <dice Unit in Base 58>
 	Miner.exe -v unit.txt
 	
@@ -39,6 +49,9 @@ Revision 1.0 Initial - 06.12.2017
 	
 	-Aplication-  -<command> <keyPair filename> <Dice Unit file> <output file for Encrypted Unit> <address Of New Owner> <address Of Operator>
 	Miner.exe -tc miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 2dnzkaaKeeCeUAXTy2DrxijSKGB 3SEdktQGS4K947PUadvbHFD2oJG
+	
+	-Aplication-  -<command> <keyPair filename> <Dice Unit file> <output file for Encrypted Unit> <address Of New Owner> <address Of Operator>
+	Miner.exe -to miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 	
 	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
 	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
