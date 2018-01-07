@@ -394,8 +394,8 @@ function funcExit() {
     view_console.printCode("USER_INFO", "UsInf0054");
 }
 
-function funcERROR(){
-    view_console.printCode("ERROR","Err0005");
+function funcERROR() {
+    view_console.printCode("ERROR", "Err0005");
     funcExit();
 }
 
@@ -486,7 +486,7 @@ function hashOfUnit() {
 //Init TCP Connection
 function initTcpConnection() {
     //Initialize DNS
-    DNS.initializeDB('../DNS_DB/dns.json', 'json');
+    DNS.initializeDB(exConfig.minerDnsFile.path, exConfig.minerDnsFile.type);
 
     //Requst DNS Binder to get IP and PORT
     var serverData = DNS.lookup(appArgs.addrOp);
