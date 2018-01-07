@@ -35,8 +35,12 @@ const modTCPWorker = require('../../models/TCP_IP/TcpWorker.js');
 const modDICEValue = require('../../models/DICEValue/DICEValue.js');
 const modEnc = require('../../models/Encryptor/Encryptor.js');
 const modBase58 = require('../../models/Base58/Base58.js');
-const modeVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
-const modeVIEW_IF = require('../VIEW/VIEW_Interfaces.js');
+const modVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
+const modCommandParser = require('../../models/CommandParser/CommandParser.js');
+
+//Configuration
+const exConfig = require('./config/minerConfig.js');
+
 
 //Create instances of the following models
 var DICE = new modDICEUnit();
@@ -47,274 +51,365 @@ var AddressGen = new modDigAddress();
 var TCPClient = new modTCPWorker();
 var DICEValue = new modDICEValue(DiceCalculatorL);
 var Time = new Date();
-var modBS58 = new modBase58();
+var Bs58 = new modBase58();
+var CommandParser = new modCommandParser(process.argv, exConfig.minerArgs);
 
-// Local Types
-var appStates = {
-    //Mining States
-    eStep_InitTCPConnection: 0,
-    eStep_ConnectToServer: 1,
-    eStep_RequestZeroes: 2,
-    eStep_CalculateDICE: 3,
-    eStep_RequestValidation: 4,
-    eStep_SendPrototype: 5,
 
-    //Generating Addr & Key Pair
-    eStep_GenerateAddr: 6,
-    eStep_SaveKeyPairToFile: 7,
-
-    //Validatig DICE Value
-    eStep_ValidateDICE: 8,
-
-    //Calculate SHA3 Of Unit
-    eStep_SHAOfUnit: 9,
-
-    //Trading
-    eStep_CurrentOwnerTrade: 11,
-    eStep_NewOwnerTrade: 12,
-    eStep_CurrentReleaseOwnerlessToServer: 13,
-
-    eStep_CurrentOwnerClaimToServer: 14,
-    eStep_NewOwnerClaimToServer: 15,
-    eStep_CurrentReleaseOwnerless: 16,
-
-    //Idle
-    eStep_IDLE: 17,
-
-    eExit_FromApp: 18,
-    eCount: 19
-};
-
-//Local static Data
-var Args = {
-    command: undefined,
-    fileInput: undefined,
-    diceUnit: undefined,
-    fileOutput: undefined,
-    addrOp: undefined,
-    addrMin: undefined,
-    spareCommand: undefined,
-    cuda: undefined
-};
-
+//Local static Data`
 var isRequestTransmitted = false;
-var currentState = undefined;
+var appArgs = CommandParser.getArgs();
+var currentState = CommandParser.getState();
 var keyPair = {};
+var scheduler_10ms = undefined;
 var zeroes = undefined;
 var encryptor = undefined;
-const pathToCudaApp = "../CUDA/DICECalculator.exe";
-var view_console = new modeVIEW(modeVIEW_IF.tableCodes, modeVIEW_IF.tablePorts, 'code');
+var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerVIEW_IF.tablePorts, exConfig.minerViewOut);
+view_console.setAllowed(exConfig.minerViewCfg);
+var isCudaReq = false;
+
+const commandFunctions =
+        {
+            "funcCalculate": funcCalculate,
+            'funcValidate': funcValidate,
+            'funcKeyGen': funcKeyGen,
+            'funcTradeOwnerless': funcTradeOwnerless,
+            'funcTradeCurrent': funcTradeCurrent,
+            'funcTradeNew': funcTradeNew,
+            'funcCalculateCUDA': funcCalculateCUDA,
+            'funcRegister': funcRegister,
+            'funcHelp': funcHelp,
+            'ERROR': funcERROR
+        };
 
 //#############################################################################
-// Local sync logic of Application
+// Local functions
 //#############################################################################
+function funcCalculate() {
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_InitTCPConnection;
 
-//Get valid arguments from CMD
-var args = process.argv.slice(2);
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_InitTCPConnection:
+                //Get Data from input file
+                getKeyPair();
 
-//Decide how to opperate the application
-decideArgs(args);
+                //Init connection
+                initTcpConnection();
+                currentState = exConfig.minerStates.eStep_RequestZeroes;
+                break;
 
-//Start scheduled program
-var scheduler_10ms = setInterval(main10ms, 10);
-var scheduler_1s = setInterval(main1s, 1000);
-view_console.setAllowed({ERROR: true, WARNING: true, USER_INFO: true, DEV_INFO: false});
+            case exConfig.minerStates.eStep_RequestZeroes:
+                zeroes = requestToServer(keyPair.digitalAddress,
+                        () => TCPClient.Request("GET Zeroes", keyPair.digitalAddress),
+                        () => currentState = exConfig.minerStates.eStep_CalculateDICE);
+                break;
 
-//#############################################################################
-// Main 10 ms function - Periodic function
-//#############################################################################
+            case exConfig.minerStates.eStep_CalculateDICE:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => TCPClient.Request("GET Validation", addr),
+                        (receivedData) => {
+                    receivedData = JSON.parse(receivedData);
 
-//Main scheduled function
-function main10ms() {
-    switch (currentState) {
-        case appStates.eStep_InitTCPConnection:
-            initTcpConnection();
-            currentState = appStates.eStep_RequestZeroes;
-            break;
+                    //Calculate needed zeroes
+                    if (appArgs.specificUnitValue !== undefined) {
+                        view_console.printCode("USER_INFO", "UsInf0051", appArgs.specificUnitValue);
+                        zeroes = DICEValue.getZeroesFromN(appArgs.specificUnitValue, receivedData.N);
+                    }
 
-        case appStates.eStep_RequestZeroes:
-            zeroes = requestToServer(keyPair.digitalAddress,
-                    () => TCPClient.Request("GET Zeroes", keyPair.digitalAddress),
-                    () => currentState = appStates.eStep_CalculateDICE);
-            break;
+                    calculateDICE(appArgs);
+                    currentState = exConfig.minerStates.eStep_RequestValidation;
+                });
+                break;
 
-        case appStates.eStep_CalculateDICE:
-            requestToServer(keyPair.digitalAddress,
-                    (addr) => TCPClient.Request("GET Validation", addr),
-                    (receivedData) => {
-                receivedData = JSON.parse(receivedData);
+            case exConfig.minerStates.eStep_RequestValidation:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => TCPClient.Request("GET Validation", addr),
+                        (receivedData) => {
+                    receivedData = JSON.parse(receivedData);
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    DICEValue.calculateValue(receivedData.k, receivedData.N);
+                    view_console.printCode("USER_INFO", "UsInf0052", DICEValue.unitValue);
+                    currentState = (DICEValue.unitValue === "InvalidDICE" ? exConfig.minerStates.eStep_RequestZeroes : exConfig.minerStates.eStep_SendPrototype);
+                });
+                break;
 
-                //Calculate needed zeroes
-                if (Args.spareCommand !== undefined) {
-                    view_console.printCode("USER_INFO", "UsInf0051", Args.spareCommand);
-                    zeroes = DICEValue.getZeroesFromN(Args.spareCommand, receivedData.N);
-                }
+            case exConfig.minerStates.eStep_SendPrototype:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    saveDICEToFile(appArgs.fileOutput);
+                    var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Prototype", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eStep_SHAOfUnit;
+                });
+                break;
 
-                calculateDICE(Args);
-                currentState = appStates.eStep_RequestValidation;
-            });
-            break;
+            case exConfig.minerStates.eStep_SHAOfUnit:
+                hashOfUnit();
+                currentState = exConfig.minerStates.eExit_FromApp;
+                break;
 
-        case appStates.eStep_RequestValidation:
-            requestToServer(keyPair.digitalAddress,
-                    (addr) => TCPClient.Request("GET Validation", addr),
-                    (receivedData) => {
-                receivedData = JSON.parse(receivedData);
-                DICEValue.setDICEProtoFromUnit(DICE);
-                DICEValue.calculateValue(receivedData.k, receivedData.N);
-                view_console.printCode("USER_INFO", "UsInf0052", DICEValue.unitValue);
-                currentState = (DICEValue.unitValue === "InvalidDICE" ? appStates.eStep_RequestZeroes : appStates.eStep_SendPrototype);
-            });
-            break;
+            case exConfig.minerStates.eExit_FromApp:
+                funcExit();
+                break;
 
-        case appStates.eStep_SendPrototype:
-            requestToServer(keyPair.digitalAddress,
-                    (addr) => {
-                saveDICEToFile(Args.fileOutput);
-                var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(modBS58.decode(Args.addrOp)));
-                TCPClient.Request("SET Prototype", addr, encryptedData);
-            },
-                    (response) => {
-                printServerReturnData(response);
-                currentState = appStates.eStep_SHAOfUnit;
-            });
-            break;
+            default:
+                throw "Application has Improper state !";
+        }
+    }
+}
 
-        case appStates.eStep_GenerateAddr:
-            view_console.printCode("USER_INFO", "UsInf0053");
-            saveKeyPair();
-            currentState = appStates.eExit_FromApp;
-            break;
+function funcValidate() {
+    validateDICEFromFile();
+    hashOfUnit();
+}
 
-        case appStates.eStep_ValidateDICE:
-            validateDICEFromFile();
-            currentState = appStates.eStep_SHAOfUnit;
-            break;
+function funcKeyGen() {
+    view_console.printCode("USER_INFO", "UsInf0053");
+    saveKeyPair();
+}
 
-        case appStates.eStep_SHAOfUnit:
-            hashOfUnit();
-            currentState = appStates.eExit_FromApp;
-            break;
+function funcTradeOwnerless() {
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerless;
 
-//Trading
-        case appStates.eStep_CurrentOwnerTrade:
-            initTcpConnection();
-            curOwnerTrade();
-            currentState = appStates.eStep_CurrentOwnerClaimToServer;
-            break;
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_CurrentReleaseOwnerless:
+                //Init Connections
+                initTcpConnection();
 
-        case appStates.eStep_NewOwnerTrade:
-            initTcpConnection();
-            try {
-                newOwnerTrade();
-            } catch (e) {
-                // Try as normal DICE
                 // Read File to DICE Unit
-                var file = modFs.readFileSync(Args.diceUnit, "utf8");
+                var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
                 DICE = DICE.fromBS58(file);
 
                 //Get key and address
                 getKeyPair();
-            }
-            currentState = appStates.eStep_NewOwnerClaimToServer;
-            break;
 
-        case appStates.eStep_CurrentReleaseOwnerless:
-            //Init Connections
-            initTcpConnection();
+                currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
+                break;
 
-            // Read File to DICE Unit
-            var file = modFs.readFileSync(Args.diceUnit, "utf8");
-            DICE = DICE.fromBS58(file);
+            case exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    var claimData = {};
+                    //Set DICE Unit to Dice validatior
+                    DICEValue.setDICEProtoFromUnit(DICE);
 
-            //Get key and address
-            getKeyPair();
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET CurrentReleaseOwnerless", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eExit_FromApp;
+                });
+                break;
 
-            currentState = appStates.eStep_CurrentReleaseOwnerlessToServer;
-            break;
+            case exConfig.minerStates.eExit_FromApp:
+                funcExit();
+                break;
 
-        case appStates.eStep_CurrentReleaseOwnerlessToServer:
-            requestToServer(keyPair.digitalAddress,
-                    (addr) => {
-                var claimData = {};
-                //Set DICE Unit to Dice validatior
-                DICEValue.setDICEProtoFromUnit(DICE);
-
-                claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
-                var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(modBS58.decode(Args.addrOp)));
-                TCPClient.Request("SET CurrentReleaseOwnerless", addr, encryptedData);
-            },
-                    (response) => {
-                printServerReturnData(response);
-                currentState = appStates.eExit_FromApp;
-            });
-            break;
-
-
-        case appStates.eStep_CurrentOwnerClaimToServer:
-            requestToServer(keyPair.digitalAddress,
-                    (addr) => {
-                DICEValue.setDICEProtoFromUnit(DICE);
-                var claimData = {};
-                claimData["newOwner"] = Args.addrMin;
-                claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
-                var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(modBS58.decode(Args.addrOp)));
-                TCPClient.Request("SET CurrentOwnerClaim", addr, encryptedData);
-            },
-                    (response) => {
-                printServerReturnData(response);
-                currentState = appStates.eExit_FromApp;
-            });
-            break;
-
-        case appStates.eStep_NewOwnerClaimToServer:
-            requestToServer(keyPair.digitalAddress,
-                    (addr) => {
-                DICEValue.setDICEProtoFromUnit(DICE);
-                var claimData = {};
-                claimData["newOwner"] = keyPair.digitalAddress;
-                claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
-                var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(modBS58.decode(Args.addrOp)));
-                TCPClient.Request("SET NewOwnerClaim", addr, encryptedData);
-            },
-                    (response) => {
-                printServerReturnData(response);
-                saveDICEToFile(Args.diceUnit + ".decompressed.txt");
-                currentState = appStates.eExit_FromApp;
-            });
-            break;
-//End of Trading
-
-
-        case appStates.eExit_FromApp:
-            //If Connection was established
-            try {
-                TCPClient.close();
-            } catch (e) {
-            }
-
-            //Exit From Application and stop Shcheduler
-            view_console.printCode("USER_INFO", "UsInf0054");
-            clearInterval(scheduler_10ms);
-            clearInterval(scheduler_1s);
-            break;
-        default:
-            throw "Application has Improper state !";
+            default:
+                throw "Application has Improper state !";
+        }
     }
 }
 
-function main1s()
-{
-    switch (currentState) {
-        case appStates.eStep_CalculateDICE:
-            view_console.printCode("USER_INFO", "UsInf0055", DiceCalculatorL.getSHA3Count());
-            break;
+function funcTradeCurrent() {
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_CurrentOwnerTrade;
 
-        default:
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_CurrentOwnerTrade:
+                initTcpConnection();
+                curOwnerTrade();
+                currentState = exConfig.minerStates.eStep_CurrentOwnerClaimToServer;
+                break;
 
-            break;
+            case exConfig.minerStates.eStep_CurrentOwnerClaimToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    var claimData = {};
+                    claimData["newOwner"] = appArgs.addrMin;
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET CurrentOwnerClaim", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eExit_FromApp;
+                });
+                break;
+
+            case exConfig.minerStates.eExit_FromApp:
+                funcExit();
+                break;
+
+            default:
+                throw "Application has Improper state !";
+        }
     }
 }
+
+function funcTradeNew() {
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_NewOwnerTrade;
+
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_NewOwnerTrade:
+                initTcpConnection();
+                try {
+                    newOwnerTrade();
+                } catch (e) {
+                    // Try as normal DICE
+                    // Read File to DICE Unit
+                    var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
+                    DICE = DICE.fromBS58(file);
+
+                    //Get key and address
+                    getKeyPair();
+                }
+                currentState = exConfig.minerStates.eStep_NewOwnerClaimToServer;
+                break;
+
+            case exConfig.minerStates.eStep_NewOwnerClaimToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    var claimData = {};
+                    claimData["newOwner"] = keyPair.digitalAddress;
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET NewOwnerClaim", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    saveDICEToFile(appArgs.diceUnit + ".decompressed.txt");
+                    currentState = exConfig.minerStates.eExit_FromApp;
+                });
+                break;
+
+            case exConfig.minerStates.eExit_FromApp:
+                funcExit();
+                break;
+
+            default:
+                throw "Application has Improper state !";
+        }
+    }
+}
+
+function funcCalculateCUDA() {
+    isCudaReq = true;
+    funcCalculate();
+}
+
+function funcRegister() {
+
+    //Get KeyPair
+    getKeyPair();
+
+    //Read DICE Unit from FS
+    var DiceFile = modFs.readFileSync(appArgs.diceUnit, "utf8");
+
+    //Logic for application is to trade an already mined unit which is stored in FS
+    DICE = DICE.fromBS58(DiceFile);
+
+    //Init connection
+    initTcpConnection();
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_RequestValidation;
+
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_RequestValidation:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => TCPClient.Request("GET Validation", addr),
+                        (receivedData) => {
+                    receivedData = JSON.parse(receivedData);
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    DICEValue.calculateValue(receivedData.k, receivedData.N);
+                    view_console.printCode("USER_INFO", "UsInf0052", DICEValue.unitValue);
+                    currentState = (DICEValue.unitValue === "InvalidDICE" ? exConfig.minerStates.eStep_RequestZeroes : exConfig.minerStates.eStep_SendPrototype);
+                });
+                break;
+
+            case exConfig.minerStates.eStep_SendPrototype:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Prototype", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eStep_SHAOfUnit;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_SHAOfUnit:
+                hashOfUnit();
+                currentState = exConfig.minerStates.eExit_FromApp;
+                break;
+
+            case exConfig.minerStates.eExit_FromApp:
+                funcExit();
+                break;
+
+            default:
+                throw "Application has Improper state !";
+        }
+    }
+}
+
+function funcHelp() {
+    var text = CommandParser.getHelpString(exConfig.minerCommandTable);
+    view_console.print(text);
+}
+
+function funcExit() {
+    try {
+        //If Connection was established
+        TCPClient.close();
+
+        //stop Shcheduler
+        clearInterval(scheduler_10ms);
+    } catch (e) {
+        //NoThing
+    }
+
+    //Exit From Application
+    view_console.printCode("USER_INFO", "UsInf0054");
+}
+
+function funcERROR(){
+    view_console.printCode("ERROR","Err0005");
+    funcExit();
+}
+
+//#############################################################################
+// Local logic of Application
+//#############################################################################
+
+//Get function name which must to me executed
+var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
+
+//Execute function 
+commandFunctions[funcName]();
+
+
 //#############################################################################
 // Local Help function
 //#############################################################################
@@ -330,7 +425,7 @@ function requestToServer(addrMiner, activate, deactivate) {
         if (receivedData !== undefined) {
             isReady = true;
             isRequestTransmitted = false;
-            receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(modBS58.decode(Args.addrOp)));
+            receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(Bs58.decode(appArgs.addrOp)));
             deactivate(receivedData);
         }
     }
@@ -342,15 +437,15 @@ function calculateDICE(Args) {
     //Inform for generetion
     view_console.printCode("USER_INFO", "UsInf0056", zeroes);
     var elapsedTime = 0;
-    var addrOpL = modBS58.decode(Args.addrOp).toString('hex');
-    var addrMinL = modBS58.decode(keyPair.digitalAddress).toString('hex');
+    var addrOpL = Bs58.decode(Args.addrOp).toString('hex');
+    var addrMinL = Bs58.decode(keyPair.digitalAddress).toString('hex');
 
     //Start measuring
     Time = Date.now();
 
     //Generating new DICE Unit  
-    if (true === Args.cuda) {
-        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, pathToCudaApp, "cudaJsUnit.json");
+    if (true === isCudaReq) {
+        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, exConfig.minerPathToCuda, "cudaJsUnit.json");
     } else {
         DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
     }
@@ -388,104 +483,27 @@ function hashOfUnit() {
     view_console.printCode("USER_INFO", "UsInf0071", DiceCalculatorL.getSHA3OfUnit(DICE));
 }
 
-//Decide arguments by input command
-function decideArgs(args) {
-    switch (args[0]) {
-        case "-c":
-        case "-cCuda":
-            Args.fileInput = args[1];
-            Args.fileOutput = args[2];
-            Args.addrOp = args[3];
-            Args.spareCommand = args[4];
-
-            //Is it CUDA requested
-            if ("-cCuda" === args[0]) {
-                Args.cuda = true;
-            }
-
-            //Get Data from input file
-            getKeyPair();
-
-            //Init current state
-            currentState = appStates.eStep_InitTCPConnection;
-            break;
-
-        case "-h":
-            Args.fileInput = args[1];
-
-            //Init current state
-            currentState = appStates.eStep_SHAOfUnit;
-            break;
-
-        case "-v":
-            Args.fileInput = args[1];
-
-            //Init current state
-            currentState = appStates.eStep_ValidateDICE;
-            break;
-
-        case "-k":
-            Args.fileOutput = args[1];
-
-            //Init current state
-            currentState = appStates.eStep_GenerateAddr;
-            break;
-
-        case "-to": // Miner1 -> Ownerlesss
-            Args.fileInput = args[1];
-            Args.diceUnit = args[2];
-            Args.addrOp = args[3];
-
-            //Init current state
-            currentState = appStates.eStep_CurrentReleaseOwnerless;
-            break;
-
-        case "-tc": // Miner1 -> Miner2
-            Args.fileInput = args[1];
-            Args.diceUnit = args[2];
-            Args.fileOutput = args[3];
-            Args.addrMin = args[4];
-            Args.addrOp = args[5];
-
-            //Init current state
-            currentState = appStates.eStep_CurrentOwnerTrade;
-            break;
-
-        case "-tn": // Miner2
-            Args.fileInput = args[1];
-            Args.diceUnit = args[2];
-            Args.addrOp = args[3];
-
-            //Init current state
-            currentState = appStates.eStep_NewOwnerTrade;
-            break;
-
-        default:
-            throw "Invalid Command";
-    }
-}
-
 //Init TCP Connection
 function initTcpConnection() {
     //Initialize DNS
     DNS.initializeDB('../DNS_DB/dns.json', 'json');
 
     //Requst DNS Binder to get IP and PORT
-    var serverData = DNS.lookup(Args.addrOp);
+    var serverData = DNS.lookup(appArgs.addrOp);
 
     //Create connection
     TCPClient.create("client", serverData.ip, serverData.port, () => {
         view_console.printCode("ERROR", "Err0001");
-        currentState = appStates.eExit_FromApp;
+        currentState = exConfig.minerStates.eExit_FromApp;
     }, view_console);
 }
 
 //Read key pair from file
 function getKeyPair() {
-    if (undefined !== Args.fileInput) {
-        var file = modFs.readFileSync(Args.fileInput, "utf8");
+    if (undefined !== appArgs.fileInput) {
+        var file = modFs.readFileSync(appArgs.fileInput, "utf8");
         keyPair = JSON.parse(file);
-        encryptor = new modEnc(modBS58.decode(keyPair.privateKey), 'sect131r1', 2);
+        encryptor = new modEnc(Bs58.decode(keyPair.privateKey), 'sect131r1', 2);
     } else {
         //Nothing
     }
@@ -493,7 +511,7 @@ function getKeyPair() {
 
 //Write key pair from file
 function saveKeyPair() {
-    if (undefined !== Args.fileOutput) {
+    if (undefined !== appArgs.fileOutput) {
         //Calculate new pair
         AddressGen.CalculateKeyAdressPair();
 
@@ -510,7 +528,7 @@ function saveKeyPair() {
         view_console.printCode("DEV_INFO", "DevInf0112", AddressGen.getDigitalAdress('hex'));
 
         //Save to file
-        modFs.writeFileSync(Args.fileOutput, JSON.stringify(keyPair), 'utf8');
+        modFs.writeFileSync(appArgs.fileOutput, JSON.stringify(keyPair), 'utf8');
     } else {
         //Nothing
     }
@@ -518,7 +536,7 @@ function saveKeyPair() {
 
 //Validating DICE Unit from file in Base 58 encoding
 function validateDICEFromFile() {
-    var file = modFs.readFileSync(Args.fileInput, "utf8");
+    var file = modFs.readFileSync(appArgs.fileInput, "utf8");
 
     //Read DICE Unit from file
     try {
@@ -544,13 +562,13 @@ function curOwnerTrade() {
     getKeyPair();
 
     //Read DICE Unit from FS
-    var DiceFile = modFs.readFileSync(Args.diceUnit, "utf8");
+    var DiceFile = modFs.readFileSync(appArgs.diceUnit, "utf8");
 
     //Logic for application is to trade an already mined unit which is stored in FS
     DICE = DICE.fromBS58(DiceFile);
 
     //Encrypt unit which is in BS58 with new owner address
-    var encData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(modBS58.decode(Args.addrMin)));
+    var encData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(Bs58.decode(appArgs.addrMin)));
 
     //Hash of Unit
     var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
@@ -558,10 +576,10 @@ function curOwnerTrade() {
     //Preapare data for storing
     var fsData = {};
     fsData['addr'] = keyPair.digitalAddress;
-    fsData['unit'] = modBS58.encode(encData);
+    fsData['unit'] = Bs58.encode(encData);
 
     //Save to file
-    modFs.writeFileSync(Args.fileOutput, modBS58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
+    modFs.writeFileSync(appArgs.fileOutput, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
 
     return hashOfUnit;
 }
@@ -573,13 +591,13 @@ function newOwnerTrade() {
     getKeyPair();
 
     //Read DICE Unit from FS
-    var DiceFileJSON = modFs.readFileSync(Args.diceUnit, "utf8");
+    var DiceFileJSON = modFs.readFileSync(appArgs.diceUnit, "utf8");
 
     //Parse file from object
-    var DiceFile = JSON.parse(modBS58.decode(DiceFileJSON));
+    var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
     //Encrypt Hash with new owner address
-    var decoded = encryptor.decryptDataPublicKey(modBS58.decode(DiceFile.unit), Buffer.from(modBS58.decode(DiceFile.addr)));
+    var decoded = encryptor.decryptDataPublicKey(Bs58.decode(DiceFile.unit), Buffer.from(Bs58.decode(DiceFile.addr)));
 
     //Logic for application is to trade an already mined unit which is stored in FS
     DICE = DICE.fromBS58(decoded.toString());
