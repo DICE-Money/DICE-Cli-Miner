@@ -1,6 +1,17 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.21 Command Arguments - 08.01.2018
+- Add abstraction for Command Arguments (CommandParser model)
+- Add '--help' command for both applications
+- Refactoring of applications to use build configuration files
+- Add returning value in "validation"
+- Add checking for mismatch in registration of new DICE Unit
+- Add '-r, --registration' command for separated registration of DICE Unit
+- Add "dnsBinder" path in configuration file for operator application
+- Add "-ver, --version" command to inform for current version of applications
+- Change return value from operator as Code instead Text
+
 Revision 1.20 CUDA Optimization - 31.12.2017
 - Implement CUDA Application Revision 1.00
 - Use JS SHA3 library instead C Library.
@@ -45,7 +56,7 @@ Revision 1.0 Initial - 06.12.2017
 ##############################################################################################################################################
 1. Example use of Miner Application 
 	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
-	Miner.exe -cCuda miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJ
+	Miner.exe -cc miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJ
 
 	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
 	Miner.exe -c miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJG
@@ -68,12 +79,21 @@ Revision 1.0 Initial - 06.12.2017
 	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
 	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
 
+	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
+	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
+
 2. Example use of Server Application 
 	-Aplication-  -<keyPair filename> <valid zeros> <k> <N>
 	Server.exe operator.json 15 1 25
 
 	-Aplication-  -config <configFile>
 	Server.exe -config serverConfig.json
+
+	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
+	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
+
+	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
+	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ##############################################################################################################################################
 # EOF
 ##############################################################################################################################################
