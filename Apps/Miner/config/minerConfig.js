@@ -25,7 +25,7 @@
  */
 
 //Application version
-const version = "Miner Application Version 1.2.1";
+const version = "Miner Application Version 1.21";
 
 //Application states
 const appStates = {
