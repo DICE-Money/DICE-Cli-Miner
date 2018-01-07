@@ -12,27 +12,34 @@ echo "6. Trading (new owner)"
 echo "7. Trading (ownerless)"
 echo "8. Trading (new owner from ownerless)"
 echo "9. Mining - Operator threshold - CUDA Accelerated"
-set /p choice="Selcet from [1..9]"
+echo "10. Register - Mined DICE Unit"
+echo "11. Help"
+set /p choice="Selcet from [1..11]"
 echo.
+
 if "%choice%"=="1" (
-    Miner.exe -c miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    Miner.exe -c ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="2" (
     set /p value="Select DICE Value [1/1024..1024]"	
 	goto:diceVal
 ) else if "%choice%"=="3" (
-     Miner.exe -v ./out/unitTest.txt.1
+     Miner.exe -v  ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="4" (
     Miner.exe -k keyPair.json
 ) else if "%choice%"=="5" (
-    Miner.exe -tc miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 2dnzkaaKeeCeUAXTy2DrxijSKGB 3SEdktQGS4K947PUadvbHFD2oJG
+    Miner.exe -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 2dnzkaaKeeCeUAXTy2DrxijSKGB 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="6" (
-    Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    Miner.exe -tn ./examples/miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="7" (
-    Miner.exe -to miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    Miner.exe -to ./examples/miner2.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="8" (
-    Miner.exe -tn miner2.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    Miner.exe -tn ./examples/miner2.json ./out/unitTest.txt.0 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="9" (
-    Miner.exe -cCuda miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    Miner.exe -cc ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+) else if "%choice%"=="10" (
+    Miner.exe -r ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+) else if "%choice%"=="11" (
+    Miner.exe -h
 ) else (
     echo "Invalid Choice. Try Again" 
 )
@@ -40,7 +47,7 @@ if "%choice%"=="1" (
     goto:choosing
 	
 :diceVal
-Miner.exe -c miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG %value%
+Miner.exe -cc ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG %value%
 goto:choosing
 
 pause

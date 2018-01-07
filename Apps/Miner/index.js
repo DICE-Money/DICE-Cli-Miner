@@ -41,7 +41,6 @@ const modCommandParser = require('../../models/CommandParser/CommandParser.js');
 //Configuration
 const exConfig = require('./config/minerConfig.js');
 
-
 //Create instances of the following models
 var DICE = new modDICEUnit();
 var DICEProto = new modDICEPrototype();
@@ -77,6 +76,7 @@ const commandFunctions =
             'funcTradeNew': funcTradeNew,
             'funcCalculateCUDA': funcCalculateCUDA,
             'funcRegister': funcRegister,
+            'funcVersion': funcVersion,
             'funcHelp': funcHelp,
             'ERROR': funcERROR
         };
@@ -130,7 +130,7 @@ function funcCalculate() {
                     receivedData = JSON.parse(receivedData);
                     DICEValue.setDICEProtoFromUnit(DICE);
                     DICEValue.calculateValue(receivedData.k, receivedData.N);
-                    view_console.printCode("USER_INFO", "UsInf0052", DICEValue.unitValue);
+                    view_console.printCode("USER_INFO", "UsInf0052", (DICEValue.unitValue * 1024 + "/1024"));
                     currentState = (DICEValue.unitValue === "InvalidDICE" ? exConfig.minerStates.eStep_RequestZeroes : exConfig.minerStates.eStep_SendPrototype);
                 });
                 break;
@@ -164,8 +164,50 @@ function funcCalculate() {
 }
 
 function funcValidate() {
-    validateDICEFromFile();
-    hashOfUnit();
+
+    //Print data inside Encoded DICE Unit
+    printDiceUnitFromBS58();
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_InitTCPConnection;
+
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_InitTCPConnection:
+                //Get Data from input file
+                getKeyPair();
+
+                //Init connection
+                initTcpConnection();
+                currentState = exConfig.minerStates.eStep_RequestValidation;
+                break;
+
+            case exConfig.minerStates.eStep_RequestValidation:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => TCPClient.Request("GET Validation", addr),
+                        (receivedData) => {
+                    receivedData = JSON.parse(receivedData);
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    DICEValue.calculateValue(receivedData.k, receivedData.N);
+                    view_console.printCode("USER_INFO", "UsInf0052", (DICEValue.unitValue * 1024 + "/1024"));
+                    currentState = exConfig.minerStates.eStep_SHAOfUnit;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_SHAOfUnit:
+                hashOfUnit();
+                currentState = exConfig.minerStates.eExit_FromApp;
+                break;
+
+            case exConfig.minerStates.eExit_FromApp:
+                funcExit();
+                break;
+
+            default:
+                throw "Application has Improper state !";
+        }
+    }
 }
 
 function funcKeyGen() {
@@ -342,7 +384,7 @@ function funcRegister() {
                     receivedData = JSON.parse(receivedData);
                     DICEValue.setDICEProtoFromUnit(DICE);
                     DICEValue.calculateValue(receivedData.k, receivedData.N);
-                    view_console.printCode("USER_INFO", "UsInf0052", DICEValue.unitValue);
+                    view_console.printCode("USER_INFO", "UsInf0052", (DICEValue.unitValue * 1024 + "/1024"));
                     currentState = (DICEValue.unitValue === "InvalidDICE" ? exConfig.minerStates.eStep_RequestZeroes : exConfig.minerStates.eStep_SendPrototype);
                 });
                 break;
@@ -377,6 +419,10 @@ function funcRegister() {
 function funcHelp() {
     var text = CommandParser.getHelpString(exConfig.minerCommandTable);
     view_console.print(text);
+}
+
+function funcVersion() {
+    view_console.print(exConfig.minerVersion);
 }
 
 function funcExit() {
@@ -535,8 +581,8 @@ function saveKeyPair() {
 }
 
 //Validating DICE Unit from file in Base 58 encoding
-function validateDICEFromFile() {
-    var file = modFs.readFileSync(appArgs.fileInput, "utf8");
+function printDiceUnitFromBS58() {
+    var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
 
     //Read DICE Unit from file
     try {
