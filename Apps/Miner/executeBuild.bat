@@ -13,8 +13,9 @@ echo "7. Trading (ownerless)"
 echo "8. Trading (new owner from ownerless)"
 echo "9. Mining - Operator threshold - CUDA Accelerated"
 echo "10. Register - Mined DICE Unit"
-echo "11. Help"
-set /p choice="Selcet from [1..11]"
+echo "12. Application version"
+echo "12. Help"
+set /p choice="Selcet from [1..12]"
 echo.
 
 if "%choice%"=="1" (
@@ -39,6 +40,8 @@ if "%choice%"=="1" (
 ) else if "%choice%"=="10" (
     Miner.exe -r ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="11" (
+    Miner.exe -ver
+) else if "%choice%"=="12" (
     Miner.exe -h
 ) else (
     echo "Invalid Choice. Try Again" 
