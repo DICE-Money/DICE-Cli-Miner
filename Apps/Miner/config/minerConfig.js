@@ -53,7 +53,6 @@ const appStates = {
 
 //Data stored buffer from console arguments
 const Args = {
-    command: undefined,
     fileInput: undefined,
     diceUnit: undefined,
     fileOutput: undefined,
@@ -72,7 +71,7 @@ const CommandsTable =
             {args: ['-tc', '--tradeCurrent'], dataArgs: ['fileInput', 'diceUnit', 'fileOutput', 'addrMin', 'addrOp'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
             {args: ['-tn', '--tradeNew'], dataArgs: ['fileInput', 'diceUnit', 'addrOp'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
             {args: ['-cc', '--calculateCuda'], dataArgs: ['fileInput', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
-            {args: ['-r', '--register'], dataArgs: ['fileInput','diceUnit','addrOp'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
+            {args: ['-r', '--register'], dataArgs: ['fileInput', 'diceUnit', 'addrOp'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
             {args: ['-h', '--help'], dataArgs: [], exec: 'funcHelp', help: "Print Following list"}
         ];
 
@@ -93,6 +92,9 @@ const viewModelOutput = 'code';
 //View Interfaces
 const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
 
+//path to DNS binder
+const dnsFile = {path: '../DNS_DB/dns.json', type: 'json'};
+
 //Exported config
 module.exports.minerArgs = Args;
 module.exports.minerStates = appStates;
@@ -101,3 +103,4 @@ module.exports.minerCommandTable = CommandsTable;
 module.exports.minerViewCfg = viewModelCfg;
 module.exports.minerViewOut = viewModelOutput;
 module.exports.minerVIEW_IF = confAppViewIF;
+module.exports.minerDnsFile = dnsFile;
