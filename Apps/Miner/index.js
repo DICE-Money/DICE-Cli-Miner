@@ -385,7 +385,7 @@ function funcRegister() {
                     DICEValue.setDICEProtoFromUnit(DICE);
                     DICEValue.calculateValue(receivedData.k, receivedData.N);
                     view_console.printCode("USER_INFO", "UsInf0052", (DICEValue.unitValue * 1024 + "/1024"));
-                    currentState = (DICEValue.unitValue === "InvalidDICE" ? exConfig.minerStates.eStep_RequestZeroes : exConfig.minerStates.eStep_SendPrototype);
+                    currentState = (DICEValue.unitValue === "InvalidDICE" ? exConfig.minerStates.eExit_FromApp : exConfig.minerStates.eStep_SendPrototype);
                 });
                 break;
 
