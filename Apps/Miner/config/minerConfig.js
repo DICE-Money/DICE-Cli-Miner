@@ -25,7 +25,8 @@
  */
 
 //Application version
-const version = "Miner Application Version 1.21";
+const version = "Copyright (c) 2017, Mihail Maldzhanski <pollarize@gmail.com>\n\
+Miner Application Version[1.22]";
 
 //Application states
 const appStates = {

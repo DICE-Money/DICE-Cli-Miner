@@ -13,9 +13,9 @@ echo "7. Trading (ownerless)"
 echo "8. Trading (new owner from ownerless)"
 echo "9. Mining - Operator threshold - CUDA Accelerated"
 echo "10. Register - Mined DICE Unit"
-echo "12. Application version"
+echo "11. Application version"
 echo "12. Help"
-set /p choice="Selcet from [1..12]"
+set /p choice="Select from [1..12]"
 echo.
 
 if "%choice%"=="1" (
@@ -34,7 +34,7 @@ if "%choice%"=="1" (
 ) else if "%choice%"=="7" (
     node index.js -to ./examples/miner2.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="8" (
-    node index.js -tn ./examples/miner2.json ./out/unitTest.txt.0 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -tn ./examples/miner2.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="9" (
     node index.js -cc ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ) else if "%choice%"=="10" (

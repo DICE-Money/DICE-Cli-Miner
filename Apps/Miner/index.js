@@ -438,6 +438,9 @@ function funcExit() {
 
     //Exit From Application
     view_console.printCode("USER_INFO", "UsInf0054");
+
+    //Terminate the process
+    process.exit();
 }
 
 function funcERROR() {
@@ -471,7 +474,15 @@ function requestToServer(addrMiner, activate, deactivate) {
         if (receivedData !== undefined) {
             isReady = true;
             isRequestTransmitted = false;
-            receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+            try {
+                receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+            } catch (e) {
+                //Nothing
+                //Do not decrypt the data
+                //Exit from the application
+                view_console.printCode("ERROR", "Err0006");
+                funcExit();
+            }
             deactivate(receivedData);
         }
     }
