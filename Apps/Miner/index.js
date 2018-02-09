@@ -33,7 +33,7 @@ const modDigAddress = require('../../models/AddressCalculator/DigitalAdressCalcu
 const modDNSBinder = require('../../models/DNSBinder/DNSBinder.js');
 const modTCPWorker = require('../../models/TCP_IP/TcpWorker.js');
 const modDICEValue = require('../../models/DICEValue/DICEValue.js');
-const modEnc = require('../../models/Encryptor/Encryptor.js');
+const modEnc = require('../../models/Encryptor/Encryptor_Signer.js');
 const modBase58 = require('../../models/Base58/Base58.js');
 const modVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
 const modCommandParser = require('../../models/CommandParser/CommandParser.js');
@@ -97,7 +97,20 @@ function funcCalculate() {
 
                 //Init connection
                 initTcpConnection();
-                currentState = exConfig.minerStates.eStep_RequestZeroes;
+                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                break;
+
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                exchangeCertificates(keyPair.digitalAddress,
+                        () => {
+                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+                }, (cert) => {
+                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    if (valid !== undefined) {
+                        currentState = exConfig.minerStates.eStep_RequestZeroes;
+                    }
+                });
                 break;
 
             case exConfig.minerStates.eStep_RequestZeroes:
@@ -180,7 +193,20 @@ function funcValidate() {
 
                 //Init connection
                 initTcpConnection();
-                currentState = exConfig.minerStates.eStep_RequestValidation;
+                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                break;
+                
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                exchangeCertificates(keyPair.digitalAddress,
+                        () => {
+                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+                }, (cert) => {
+                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    if (valid !== undefined) {
+                        currentState = exConfig.minerStates.eStep_RequestValidation;
+                    }
+                });
                 break;
 
             case exConfig.minerStates.eStep_RequestValidation:
@@ -233,7 +259,20 @@ function funcTradeOwnerless() {
                 //Get key and address
                 getKeyPair();
 
-                currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
+                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                break;
+
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                exchangeCertificates(keyPair.digitalAddress,
+                        () => {
+                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+                }, (cert) => {
+                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    if (valid !== undefined) {
+                        currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
+                    }
+                });
                 break;
 
             case exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer:
@@ -273,7 +312,20 @@ function funcTradeCurrent() {
             case exConfig.minerStates.eStep_CurrentOwnerTrade:
                 initTcpConnection();
                 curOwnerTrade();
-                currentState = exConfig.minerStates.eStep_CurrentOwnerClaimToServer;
+                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                break;
+
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                exchangeCertificates(keyPair.digitalAddress,
+                        () => {
+                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+                }, (cert) => {
+                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    if (valid !== undefined) {
+                        currentState = exConfig.minerStates.eStep_CurrentOwnerClaimToServer;
+                    }
+                });
                 break;
 
             case exConfig.minerStates.eStep_CurrentOwnerClaimToServer:
@@ -322,8 +374,22 @@ function funcTradeNew() {
                     //Get key and address
                     getKeyPair();
                 }
-                currentState = exConfig.minerStates.eStep_NewOwnerClaimToServer;
+                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
+
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                exchangeCertificates(keyPair.digitalAddress,
+                        () => {
+                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+                }, (cert) => {
+                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    if (valid !== undefined) {
+                        currentState = exConfig.minerStates.eStep_NewOwnerClaimToServer;
+                    }
+                });
+                break;
+
 
             case exConfig.minerStates.eStep_NewOwnerClaimToServer:
                 requestToServer(keyPair.digitalAddress,
@@ -373,10 +439,23 @@ function funcRegister() {
 
     //Start scheduled program
     scheduler_10ms = setInterval(main10ms, 10);
-    currentState = exConfig.minerStates.eStep_RequestValidation;
+    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
 
     function main10ms() {
         switch (currentState) {
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                exchangeCertificates(keyPair.digitalAddress,
+                        () => {
+                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+                }, (cert) => {
+                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    if (valid !== undefined) {
+                        currentState = exConfig.minerStates.eStep_RequestValidation;
+                    }
+                });
+                break;
+            
             case exConfig.minerStates.eStep_RequestValidation:
                 requestToServer(keyPair.digitalAddress,
                         (addr) => TCPClient.Request("GET Validation", addr),
@@ -489,6 +568,22 @@ function requestToServer(addrMiner, activate, deactivate) {
     return receivedData;
 }
 
+function exchangeCertificates(addrMiner, activate, deactivate) {
+    var receivedData;
+    if (false === isRequestTransmitted) {
+        activate(addrMiner);
+        isRequestTransmitted = true;
+    } else {
+        receivedData = TCPClient.readByAddress(addrMiner);
+        if (receivedData !== undefined) {
+            isReady = true;
+            isRequestTransmitted = false;
+            deactivate(receivedData);
+        }
+    }
+    return receivedData;
+}
+
 //Function Generate DICE unit (Contains busy loop)
 function calculateDICE(Args) {
     //Inform for generetion
@@ -560,7 +655,7 @@ function getKeyPair() {
     if (undefined !== appArgs.fileInput) {
         var file = modFs.readFileSync(appArgs.fileInput, "utf8");
         keyPair = JSON.parse(file);
-        encryptor = new modEnc(Bs58.decode(keyPair.privateKey), 'sect131r1', 2);
+        encryptor = new modEnc({private: Bs58.decode(keyPair.privateKey), public: Bs58.decode(keyPair.digitalAddress)});
     } else {
         //Nothing
     }

@@ -32,24 +32,25 @@ Miner Application Version[1.22]";
 const appStates = {
     //Mining States
     eStep_InitTCPConnection: 0,
-    eStep_ConnectToServer: 1,
-    eStep_RequestZeroes: 2,
-    eStep_CalculateDICE: 3,
-    eStep_RequestValidation: 4,
-    eStep_SendPrototype: 5,
-    eStep_SHAOfUnit: 6,
+    eStep_ExchangeCertificates: 1,
+    eStep_ConnectToServer: 2,
+    eStep_RequestZeroes: 3,
+    eStep_CalculateDICE: 4,
+    eStep_RequestValidation: 5,
+    eStep_SendPrototype: 6,
+    eStep_SHAOfUnit: 7,
 
     //Trading
-    eStep_CurrentOwnerTrade: 7,
-    eStep_NewOwnerTrade: 8,
-    eStep_CurrentReleaseOwnerlessToServer: 9,
+    eStep_CurrentOwnerTrade: 8,
+    eStep_NewOwnerTrade: 9,
+    eStep_CurrentReleaseOwnerlessToServer: 10,
 
-    eStep_CurrentOwnerClaimToServer: 10,
-    eStep_NewOwnerClaimToServer: 11,
-    eStep_CurrentReleaseOwnerless: 12,
+    eStep_CurrentOwnerClaimToServer: 11,
+    eStep_NewOwnerClaimToServer: 12,
+    eStep_CurrentReleaseOwnerless: 13,
 
     //Idle
-    eStep_IDLE: 13,
+    eStep_IDLE: 14,
 
     eExit_FromApp: 14,
     eStep_Count: 15
@@ -92,7 +93,7 @@ const viewModelCfg = {
 };
 
 //Ex: 'text' 'code' 'rpc'
-const viewModelOutput = 'code';
+const viewModelOutput = 'text';
 
 //View Interfaces
 const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');

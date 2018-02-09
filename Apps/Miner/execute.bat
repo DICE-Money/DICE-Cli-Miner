@@ -19,26 +19,26 @@ set /p choice="Select from [1..12]"
 echo.
 
 if "%choice%"=="1" (
-    node index.js -c ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -c ./examples/miner.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="2" (
     set /p value="Select DICE Value [1/1024..1024]"	
 	goto:diceVal
 ) else if "%choice%"=="3" (
-     node index.js -v  ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+     node index.js -v  ./examples/miner.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="4" (
     node index.js -k keyPair.json
 ) else if "%choice%"=="5" (
-    node index.js -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 2dnzkaaKeeCeUAXTy2DrxijSKGB 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 3jKDZ4SJxXzBj4BMZiazcKBNcLo 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="6" (
-    node index.js -tn ./examples/miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -tn ./examples/miner2.json ./out/unitEncToM2.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="7" (
-    node index.js -to ./examples/miner2.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -to ./examples/miner2.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="8" (
-    node index.js -tn ./examples/miner2.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -tn ./examples/miner2.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="9" (
-    node index.js -cc ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -cc ./examples/miner.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="10" (
-    node index.js -r ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
+    node index.js -r ./examples/miner.json ./out/unitTest.txt.38 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="11" (
     node index.js -ver
 ) else if "%choice%"=="12" (
@@ -50,7 +50,7 @@ if "%choice%"=="1" (
     goto:choosing
 	
 :diceVal
-node index.js -cc ./examples/miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG %value%
+node index.js -cc ./examples/miner.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF %value%
 goto:choosing
 
 pause
