@@ -1,6 +1,6 @@
 {
   "name": "EncryptionNodeJS",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "keywords": [
     "util",
     "functional",
@@ -11,13 +11,19 @@
   "author": "Mihail Maldzhanski",
   "contributors": [],
   "dependencies": {
-    "big-integer": "^1.6.25",
-    "bitcoinjs-lib": "^3.3.0",
+    "big-integer": "^1.6.26",
     "bs58": "^4.0.1",
-    "bufferish": "^0.1.0",
-    "convert-hex": "^0.1.0",
-    "elliptic-curve": "^0.1.0",
+    "elliptic": "^6.4.0",
     "js-sha3": "^0.6.1",
-    "ripemd160": "^2.0.1"
+    "key-encoder": "^1.1.6",
+    "mysql": "^2.15.0",
+    "node-lzw": "^0.3.1",
+    "sync-mysql": "^3.0.1"
   },
+  "scripts": {
+    "start": "node Apps/Miner/execute.bat"
+  },
+  "devDependencies": {
+    "tui-jsdoc-template": "^1.2.2"
+  }
 }

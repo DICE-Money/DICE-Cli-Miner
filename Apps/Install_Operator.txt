@@ -1,0 +1,13 @@
+##############################################################################################################################################
+# HOW TO PREPARE ENVIRONMENT 
+##############################################################################################################################################
+
+1. Install MySQL with PhpMyAdmin DB Access
+	ex. WAMP for Windows or LAMP for Linux 
+ 
+2. Create new user in DB and set a password
+
+3. Go to ./Operator folder and modify operatorConfig.json file to
+	proper host, user and password
+
+4. Execute Operator appalication

@@ -1,6 +1,18 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.22 Security Boost (Certificate) - 10.02.2018
+-
+
+Revision 1.22 MySql Database - 15.01.2018
+- Add MySql Database support for server application
+- Add classes to use MySql database
+- First revision of JSDOC for proper way to describe methods and classes in doxygen format
+- Change from sync to async database method invoke
+- Add safety way to invoke invalid method on server
+- Operator changed to use properly outside configuration with JSON file
+- Add safety mechanism to prevent breaking the Operator Application if there is no table or DB
+ 
 Revision 1.21 Command Arguments - 08.01.2018
 - Add abstraction for Command Arguments (CommandParser model)
 - Add '--help' command for both applications
