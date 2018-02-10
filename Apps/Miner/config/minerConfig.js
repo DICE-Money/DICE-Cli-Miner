@@ -25,8 +25,9 @@
  */
 
 //Application version
-const version = "Copyright (c) 2017, Mihail Maldzhanski <pollarize@gmail.com>\n\
-Miner Application Version[1.22]";
+const version = 
+"Copyright (c) 2017, Mihail Maldzhanski <pollarize@gmail.com>\n\
+DICE Money <www.dice.money> - Miner Application Version[1.30]";
 
 //Application states
 const appStates = {
@@ -93,7 +94,7 @@ const viewModelCfg = {
 };
 
 //Ex: 'text' 'code' 'rpc'
-const viewModelOutput = 'text';
+const viewModelOutput = 'code';
 
 //View Interfaces
 const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');

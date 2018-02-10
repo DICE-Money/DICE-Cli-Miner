@@ -38,7 +38,7 @@ if "%choice%"=="1" (
 ) else if "%choice%"=="9" (
     node index.js -cc ./examples/miner.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="10" (
-    node index.js -r ./examples/miner.json ./out/unitTest.txt.38 3sTk9ZirS7Tamw8DDPpx73R6xSF
+    node index.js -r ./examples/miner.json ./out/unitTest.txt 3sTk9ZirS7Tamw8DDPpx73R6xSF
 ) else if "%choice%"=="11" (
     node index.js -ver
 ) else if "%choice%"=="12" (

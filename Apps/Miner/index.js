@@ -101,16 +101,7 @@ function funcCalculate() {
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
-                exchangeCertificates(keyPair.digitalAddress,
-                        () => {
-                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-                }, (cert) => {
-                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    if (valid !== undefined) {
-                        currentState = exConfig.minerStates.eStep_RequestZeroes;
-                    }
-                });
+                executeExchangeCertificate(exConfig.minerStates.eStep_RequestZeroes);
                 break;
 
             case exConfig.minerStates.eStep_RequestZeroes:
@@ -195,18 +186,9 @@ function funcValidate() {
                 initTcpConnection();
                 currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
-                
+
             case exConfig.minerStates.eStep_ExchangeCertificates:
-                exchangeCertificates(keyPair.digitalAddress,
-                        () => {
-                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-                }, (cert) => {
-                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    if (valid !== undefined) {
-                        currentState = exConfig.minerStates.eStep_RequestValidation;
-                    }
-                });
+                executeExchangeCertificate(exConfig.minerStates.eStep_RequestValidation);
                 break;
 
             case exConfig.minerStates.eStep_RequestValidation:
@@ -263,16 +245,7 @@ function funcTradeOwnerless() {
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
-                exchangeCertificates(keyPair.digitalAddress,
-                        () => {
-                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-                }, (cert) => {
-                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    if (valid !== undefined) {
-                        currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
-                    }
-                });
+                executeExchangeCertificate(exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer);
                 break;
 
             case exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer:
@@ -316,6 +289,7 @@ function funcTradeCurrent() {
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
+
                 exchangeCertificates(keyPair.digitalAddress,
                         () => {
                     var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
@@ -378,16 +352,7 @@ function funcTradeNew() {
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
-                exchangeCertificates(keyPair.digitalAddress,
-                        () => {
-                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-                }, (cert) => {
-                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    if (valid !== undefined) {
-                        currentState = exConfig.minerStates.eStep_NewOwnerClaimToServer;
-                    }
-                });
+                executeExchangeCertificate(exConfig.minerStates.eStep_NewOwnerClaimToServer);
                 break;
 
 
@@ -444,18 +409,9 @@ function funcRegister() {
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_ExchangeCertificates:
-                exchangeCertificates(keyPair.digitalAddress,
-                        () => {
-                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-                }, (cert) => {
-                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    if (valid !== undefined) {
-                        currentState = exConfig.minerStates.eStep_RequestValidation;
-                    }
-                });
+                executeExchangeCertificate(exConfig.minerStates.eStep_RequestValidation);
                 break;
-            
+
             case exConfig.minerStates.eStep_RequestValidation:
                 requestToServer(keyPair.digitalAddress,
                         (addr) => TCPClient.Request("GET Validation", addr),
@@ -582,6 +538,23 @@ function exchangeCertificates(addrMiner, activate, deactivate) {
         }
     }
     return receivedData;
+}
+
+function executeExchangeCertificate(nextState) {
+    exchangeCertificates(keyPair.digitalAddress,
+            () => {
+        var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
+        TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+    }, (cert) => {
+        var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+        if (valid !== undefined) {
+            if (typeof valid === "string") {
+                currentState = nextState;
+            } else {
+                view_console.printCode("ERROR", "Err0007");
+            }
+        }
+    });
 }
 
 //Function Generate DICE unit (Contains busy loop)
@@ -720,7 +693,7 @@ function curOwnerTrade() {
     DICE = DICE.fromBS58(DiceFile);
 
     //Encrypt unit which is in BS58 with new owner address
-    var encData = encryptor.encryptDataPublicKey(DICE.toBS58(), Buffer.from(Bs58.decode(appArgs.addrMin)));
+    var encData = encryptor.encryptFilePublicKey(DICE.toBS58(), Buffer.from(Bs58.decode(appArgs.addrMin)));
 
     //Hash of Unit
     var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
@@ -749,7 +722,7 @@ function newOwnerTrade() {
     var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
     //Encrypt Hash with new owner address
-    var decoded = encryptor.decryptDataPublicKey(Bs58.decode(DiceFile.unit), Buffer.from(Bs58.decode(DiceFile.addr)));
+    var decoded = encryptor.decryptFilePublicKey(Bs58.decode(DiceFile.unit), Buffer.from(Bs58.decode(DiceFile.addr)));
 
     //Logic for application is to trade an already mined unit which is stored in FS
     DICE = DICE.fromBS58(decoded.toString());
