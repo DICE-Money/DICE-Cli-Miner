@@ -1,6 +1,21 @@
 {
-    "3SEdktQGS4K947PUadvbHFD2oJG": {
+    "3sTk9ZirS7Tamw8DDPpx73R6xSF": {
         "ip": "127.0.0.1",
         "port": "1993"
+    },
+    "3i3QE2mgPeUBXyLVnU7WiGh4rwi": {
+        "system":"Ubuntu 16.04 - x86 - Intel Core Duo - 3GB RAM - 1 TB ROM",
+        "ip": "37.157.174.99",
+        "port": "2018"
+    },
+        "4B395WJmYWzCN8XJewefz4RawZ3": {
+        "system":"Orange Pi One - Allwinner H3 - 512MB RAM - 8GB ROM",
+        "ip": "37.157.174.99",
+        "port": "2017"
+    },
+        "31L9fMKtvmzZenMtzZLKBhzdfNX": {
+        "system":"Orange Pi Zero - Allwinner H2+ - 256MB RAM - 4GB ROM",
+        "ip": "37.157.174.99",
+        "port": "2016"
     }
 }
