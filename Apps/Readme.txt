@@ -1,8 +1,14 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
-Revision 1.22 Security Boost (Certificate) - 10.02.2018
--
+Revision 1.30 Security Improvement (Certificate) - 10.02.2018
+- Change main encryption curve from sect113r1 to secp160k1
+- Add new schema for key generation 
+- Add second ephemeral key exchange with curve secp521r1
+- Add signing and verification with two new curves
+- Overall improved security communication between operator and miner
+- Re-generated key pairs by using new schema
+
 
 Revision 1.22 MySql Database - 15.01.2018
 - Add MySql Database support for server application
