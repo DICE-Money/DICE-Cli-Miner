@@ -510,7 +510,7 @@ function requestToServer(addrMiner, activate, deactivate) {
             isReady = true;
             isRequestTransmitted = false;
             try {
-                receivedData = encryptor.decryptDataPublicKey(Buffer.from(receivedData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                receivedData = encryptor.decryptDataPublicKey(receivedData, Buffer.from(Bs58.decode(appArgs.addrOp)));
             } catch (e) {
                 //Nothing
                 //Do not decrypt the data
@@ -545,14 +545,21 @@ function executeExchangeCertificate(nextState) {
             () => {
         var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
         TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
+        console.log(certificate);
     }, (cert) => {
-        var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-        if (valid !== undefined) {
-            if (typeof valid === "string") {
-                currentState = nextState;
-            } else {
-                view_console.printCode("ERROR", "Err0007");
+        try {
+            var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
+            if (valid !== undefined) {
+                if (typeof valid === "string") {
+                    currentState = nextState;
+                } else {
+                    view_console.printCode("ERROR", "Err0007");
+                }
             }
+        } catch (e) {
+            //Exit
+            view_console.printCode("ERROR", "Err0007");
+            currentState = exConfig.minerStates.eExit_FromApp;
         }
     });
 }
@@ -570,7 +577,7 @@ function calculateDICE(Args) {
 
     //Generating new DICE Unit  
     if (true === isCudaReq) {
-        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, exConfig.minerPathToCuda, "cudaJsUnit.json");
+        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, exConfig.minerPathToCuda, `cudaJsUnit_${keyPair.digitalAddress}.json`);
     } else {
         DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
     }
