@@ -2,7 +2,12 @@
 # General Revision History
 ##############################################################################################################################################
 Revision 1.35 TCP Secure Protocol Optimization - 18.02.2018
-
+- Parallel model for operator application
+- Bug fixes of communication protocol
+- Added AES-256-GCM Encryption instead AES-256-CBC
+- New Key generation schema (159 unique bits + 1 sign bit)
+- Command Parser for nexe build capability(different count of arguments)
+- Build environment for ARM 64 bit
 
 Revision 1.31 TCP Buffering - 11.02.2018
 - Certificate exchange in hex format instead buffer type

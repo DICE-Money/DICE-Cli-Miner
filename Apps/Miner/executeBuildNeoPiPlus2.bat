@@ -19,28 +19,26 @@ set /p choice="Select from [1..12]"
 echo.
 
 if "%choice%"=="1" (
-    Miner.exe -c ./examples/miner.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -c ./examples/miner.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="2" (
     set /p value="Select DICE Value [1/1024..1024]"	
 	goto:diceVal
 ) else if "%choice%"=="3" (
-     Miner.exe -v  ./examples/miner.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+     Miner.exe -v  ./examples/miner.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="4" (
     Miner.exe -k keyPair.json
 ) else if "%choice%"=="5" (
-    Miner.exe -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 243oHkoaZ5MiJPnuLnRcwjqUPx7Q 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 243oHkoaZ5MiJPnuLnRcwjqUPx7Q WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="6" (
-    Miner.exe -tn ./examples/miner2.json ./out/unitEncToM2.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -tn ./examples/miner2.json ./out/unitEncToM2.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="7" (
-    Miner.exe -to ./examples/miner2.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -to ./examples/miner2.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="8" (
-    Miner.exe -tn ./examples/miner2.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -tn ./examples/miner2.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="9" (
-    call Miner.exe -cc ./examples/miner.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
-	call Miner.exe -cc ./examples/miner2.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
-	call Miner.exe -cc ./examples/miner3.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -cc ./examples/miner.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="10" (
-    Miner.exe -r ./examples/miner.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY
+    Miner.exe -r ./examples/miner.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo
 ) else if "%choice%"=="11" (
     Miner.exe -ver
 ) else if "%choice%"=="12" (
@@ -52,7 +50,7 @@ if "%choice%"=="1" (
     goto:choosing
 	
 :diceVal
-Miner.exe -cc ./examples/miner.json ./out/unitTest.txt 4MEb8cJA2EMbyj3ApKN8zDn6W4HY %value%
+Miner.exe -cc ./examples/miner.json ./out/unitTest.txt WqYSC4cbWZukTqnjbMJwvSGVozo %value%
 goto:choosing
 
 pause
