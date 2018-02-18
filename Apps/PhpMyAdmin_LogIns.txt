@@ -4,11 +4,11 @@
 	"pass": "qmeCTLe5EzTvifOI"
 
 2. Orange Pi One
-	Address: 37.157.174.99:3080/phpmyadmin/
+	Address: 37.157.174.99:2080/phpmyadmin/
 	"user": "dice_user"
 	"pass": "R3Ec8MmCW3WHZPVB"
 	
 3. Neo Pi Plus 2
-	Address: 37.157.174.99:3080/phpmyadmin/
+	Address: 37.157.174.99:4080/phpmyadmin/
 	"user": "dice_user"
 	"pass": "HT0EVymu4yTw5WhD"
