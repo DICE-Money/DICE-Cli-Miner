@@ -545,7 +545,6 @@ function executeExchangeCertificate(nextState) {
             () => {
         var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
         TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-        console.log(certificate);
     }, (cert) => {
         try {
             var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
@@ -558,7 +557,7 @@ function executeExchangeCertificate(nextState) {
             }
         } catch (e) {
             //Exit
-            view_console.printCode("ERROR", "Err0007");
+            view_console.printCode("ERROR", "Err0007", e);
             currentState = exConfig.minerStates.eExit_FromApp;
         }
     });
@@ -708,11 +707,10 @@ function curOwnerTrade() {
     //Preapare data for storing
     var fsData = {};
     fsData['addr'] = keyPair.digitalAddress;
-    fsData['unit'] = Bs58.encode(encData);
+    fsData['unit'] = Buffer.from(encData,"hex").toString("base64");
 
     //Save to file
     modFs.writeFileSync(appArgs.fileOutput, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
-
     return hashOfUnit;
 }
 
@@ -729,7 +727,8 @@ function newOwnerTrade() {
     var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
     //Encrypt Hash with new owner address
-    var decoded = encryptor.decryptFilePublicKey(Bs58.decode(DiceFile.unit), Buffer.from(Bs58.decode(DiceFile.addr)));
+    DiceFile.unit = Buffer.from(DiceFile.unit,"base64").toString("hex");
+    var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
     //Logic for application is to trade an already mined unit which is stored in FS
     DICE = DICE.fromBS58(decoded.toString());
