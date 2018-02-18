@@ -1,6 +1,13 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.35 TCP Secure Protocol Optimization - 18.02.2018
+
+
+Revision 1.31 TCP Buffering - 11.02.2018
+- Certificate exchange in hex format instead buffer type
+- Add TCP buffering of messages 
+
 Revision 1.30 Security Improvement (Certificate) - 10.02.2018
 - Change main encryption curve from sect113r1 to secp160k1
 - Add new schema for key generation 
@@ -8,7 +15,6 @@ Revision 1.30 Security Improvement (Certificate) - 10.02.2018
 - Add signing and verification with two new curves
 - Overall improved security communication between operator and miner
 - Re-generated key pairs by using new schema
-
 
 Revision 1.22 MySql Database - 15.01.2018
 - Add MySql Database support for server application
@@ -44,7 +50,7 @@ Revision 1.11 Trading Ownerless - 14.12.2017
 - Add support of user defined value for mining a new DICE Unit
 - Update execute.bat file with new commands
 - Bug Fixes 
-	- Console messages
+- Console messages
 
 Revision 1.1 Trading - 10.12.2017
 - Included Trading support
@@ -57,17 +63,17 @@ Revision 1.1 Trading - 10.12.2017
 
 	
 Revision 1.0 Initial - 06.12.2017
-	- Generation of Key pair Digital Address 
-	- Communication over TCP between Miner and Server 
-	- Encrypted data with Digital addresses 
-	- Generation of new DICE Units 
-	- Swatch Time calculation 
-	- SHA 3 on C for NodeJS (still need some improvement for standalone building) 
-	- Encoding to Base 58 
-	- Valuiation of units by Server and locally 
-	- Registration of DICE unit in its DB 
-	- DNS binder for translation of Digital Address to Ip Port communication to Server 
-	- Standalone applications for Server and Miner
+- Generation of Key pair Digital Address 
+- Communication over TCP between Miner and Server 
+- Encrypted data with Digital addresses 
+- Generation of new DICE Units 
+- Swatch Time calculation 
+- SHA 3 on C for NodeJS (still need some improvement for standalone building) 
+- Encoding to Base 58 
+- Valuiation of units by Server and locally 
+- Registration of DICE unit in its DB 
+- DNS binder for translation of Digital Address to Ip Port communication to Server 
+- Standalone applications for Server and Miner
 
 ##############################################################################################################################################
 # How to Use

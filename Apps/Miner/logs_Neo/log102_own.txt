@@ -1,0 +1,35 @@
+UsInf0056  :  18
+NBody.GPU
+=========
+
+CUDA version:   v9000
+CUDA Devices: 
+
+0: GeForce GTX 1050: 6.1
+  Global memory:   4096mb
+  Shared memory:   48kb
+  Constant memory: 64kb
+  Block registers: 65536
+
+  Warp size:         32
+  Threads per block: 1024
+  Multiprocessors: 5
+  Threads per multiprocessor: 2048
+  Concurrent kernels: 1
+  Max block dimensions: [ 1024, 1024, 64 ]
+  Max grid dimensions:  [ 2147483647, 65535, 65535 ]
+
+CUDA DICE Calculator has been started
+Blocks: 8448 Threads per block: 64 Total Threads: 540672 
+Time used: 1 s
+UsInf0065  :  2270
+UsInf0052  :  2/1024
+UsInf0057  :  ./testUnits/unitTest_102.txt.0
+UsInf0067
+UsInf0068  :  UsInf0073
+UsInf0069
+UsInf0070  :  4/1024
+UsInf0071  :  558f7993919d9b373aba28f415e1397c67a07beaa3e652627b3eaad546e63deb55f2b0bdaba385f0979ad7c9621138ffa7dca641782279d63a34ae3863900000
+UsInf0072
+UsInf0071  :  1eab1763f034baa54bf7ec320f4bf6572f560a346b96c72abc065e4930a53f962cc89a02e8a6a7544a2c4f132c2533f48eae823641e560c9f455cbb34aa80000
+UsInf0054
