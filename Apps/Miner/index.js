@@ -65,6 +65,7 @@ var encryptor = undefined;
 var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerVIEW_IF.tablePorts, exConfig.minerViewOut);
 view_console.setAllowed(exConfig.minerViewCfg);
 var isCudaReq = false;
+var securityCounter = 0;
 
 const commandFunctions =
         {
@@ -95,8 +96,12 @@ function funcCalculate() {
                 //Get Data from input file
                 getKeyPair();
 
+                //Convert HexDash to BS58
+                getAddrOperator();
+
                 //Init connection
                 initTcpConnection();
+
                 currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
 
@@ -182,8 +187,12 @@ function funcValidate() {
                 //Get Data from input file
                 getKeyPair();
 
+                //Get operator address from Dice Unit
+                getAddrOperatorFromDICEUnit();
+
                 //Init connection
                 initTcpConnection();
+
                 currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
 
@@ -231,8 +240,6 @@ function funcTradeOwnerless() {
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_CurrentReleaseOwnerless:
-                //Init Connections
-                initTcpConnection();
 
                 // Read File to DICE Unit
                 var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
@@ -240,6 +247,12 @@ function funcTradeOwnerless() {
 
                 //Get key and address
                 getKeyPair();
+
+                //Get Address from Unit
+                getAddrOperatorFromDICEUnit();
+
+                //Init Connections
+                initTcpConnection();
 
                 currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
@@ -283,23 +296,16 @@ function funcTradeCurrent() {
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_CurrentOwnerTrade:
+                var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
+                DICE = DICE.fromBS58(file);
+                getAddrOperatorFromDICEUnit();
                 initTcpConnection();
                 curOwnerTrade();
                 currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
-
-                exchangeCertificates(keyPair.digitalAddress,
-                        () => {
-                    var certificate = encryptor.getKeyExchangeCertificate(Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    TCPClient.Request("SET Certificate", keyPair.digitalAddress, certificate);
-                }, (cert) => {
-                    var valid = encryptor.acceptKeyExchangeCertificate(cert, Buffer.from(Bs58.decode(appArgs.addrOp)));
-                    if (valid !== undefined) {
-                        currentState = exConfig.minerStates.eStep_CurrentOwnerClaimToServer;
-                    }
-                });
+                executeExchangeCertificate(exConfig.minerStates.eStep_CurrentOwnerClaimToServer);
                 break;
 
             case exConfig.minerStates.eStep_CurrentOwnerClaimToServer:
@@ -307,7 +313,7 @@ function funcTradeCurrent() {
                         (addr) => {
                     DICEValue.setDICEProtoFromUnit(DICE);
                     var claimData = {};
-                    claimData["newOwner"] = appArgs.addrMin;
+                    claimData["newOwner"] = AddressGen.convertHexDashToBS58(appArgs.addrMin);
                     claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
                     var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
                     TCPClient.Request("SET CurrentOwnerClaim", addr, encryptedData);
@@ -336,7 +342,6 @@ function funcTradeNew() {
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_NewOwnerTrade:
-                initTcpConnection();
                 try {
                     newOwnerTrade();
                 } catch (e) {
@@ -348,6 +353,8 @@ function funcTradeNew() {
                     //Get key and address
                     getKeyPair();
                 }
+                getAddrOperatorFromDICEUnit();
+                initTcpConnection();
                 currentState = exConfig.minerStates.eStep_ExchangeCertificates;
                 break;
 
@@ -398,6 +405,9 @@ function funcRegister() {
 
     //Logic for application is to trade an already mined unit which is stored in FS
     DICE = DICE.fromBS58(DiceFile);
+
+    //Get Address from Unit
+    getAddrOperatorFromDICEUnit();
 
     //Init connection
     initTcpConnection();
@@ -532,7 +542,6 @@ function exchangeCertificates(addrMiner, activate, deactivate) {
     } else {
         receivedData = TCPClient.readByAddress(addrMiner);
         if (receivedData !== undefined) {
-            isReady = true;
             isRequestTransmitted = false;
             deactivate(receivedData);
         }
@@ -556,9 +565,15 @@ function executeExchangeCertificate(nextState) {
                 }
             }
         } catch (e) {
-            //Exit
-            view_console.printCode("ERROR", "Err0007", e);
-            currentState = exConfig.minerStates.eExit_FromApp;
+            if (exConfig.minerSecurityLevels.length > securityCounter) {
+                //Update security level
+                encryptor.setSecurityLevel(exConfig.minerSecurityLevels[securityCounter]);
+                securityCounter++;
+            } else {
+                //Exit
+                view_console.printCode("ERROR", "Err0007", e);
+                currentState = exConfig.minerStates.eExit_FromApp;
+            }
         }
     });
 }
@@ -616,11 +631,17 @@ function hashOfUnit() {
 
 //Init TCP Connection
 function initTcpConnection() {
+
     //Initialize DNS
     DNS.initializeDB(exConfig.minerDnsFile.path, exConfig.minerDnsFile.type);
 
     //Requst DNS Binder to get IP and PORT
-    var serverData = DNS.lookup(appArgs.addrOp);
+    var serverData;
+    try {
+        serverData = DNS.lookup(AddressGen.convertBS58ToHexDash(appArgs.addrOp));
+    } catch (e) {
+        serverData = DNS.lookup(AddressGen.convertHexToHexDash(appArgs.addrOp));
+    }
 
     //Create connection
     TCPClient.create("client", serverData.ip, serverData.port, () => {
@@ -631,10 +652,11 @@ function initTcpConnection() {
 
 //Read key pair from file
 function getKeyPair() {
-    if (undefined !== appArgs.fileInput) {
-        var file = modFs.readFileSync(appArgs.fileInput, "utf8");
+    if (undefined !== appArgs.keyPair) {
+        var file = modFs.readFileSync(appArgs.keyPair, "utf8");
         keyPair = JSON.parse(file);
-        encryptor = new modEnc({private: Bs58.decode(keyPair.privateKey), public: Bs58.decode(keyPair.digitalAddress)});
+        keyPair = AddressGen.fromHexDash(keyPair);
+        encryptor = new modEnc({private: Bs58.decode(keyPair.privateKey), public: Bs58.decode(keyPair.digitalAddress)}, exConfig.minerSecurityLevels[securityCounter]);
     } else {
         //Nothing
     }
@@ -648,7 +670,7 @@ function saveKeyPair() {
 
         //Save to local var
         keyPair.privateKey = AddressGen.getPrivateKey('bs58');
-        keyPair.digitalAddress = AddressGen.getDigitalAdress('bs58');
+        keyPair.digitalAddress = AddressGen.getDigitalAdress('hexDash');
 
         //Print newly generated pair
         view_console.printCode("USER_INFO", "UsInf0059", keyPair.privateKey);
@@ -699,7 +721,7 @@ function curOwnerTrade() {
     DICE = DICE.fromBS58(DiceFile);
 
     //Encrypt unit which is in BS58 with new owner address
-    var encData = encryptor.encryptFilePublicKey(DICE.toBS58(), Buffer.from(Bs58.decode(appArgs.addrMin)));
+    var encData = encryptor.encryptFilePublicKey(DICE.toBS58(), Buffer.from(Bs58.decode(AddressGen.convertHexDashToBS58(appArgs.addrMin))));
 
     //Hash of Unit
     var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
@@ -707,7 +729,7 @@ function curOwnerTrade() {
     //Preapare data for storing
     var fsData = {};
     fsData['addr'] = keyPair.digitalAddress;
-    fsData['unit'] = Buffer.from(encData,"hex").toString("base64");
+    fsData['unit'] = Buffer.from(encData, "hex").toString("base64");
 
     //Save to file
     modFs.writeFileSync(appArgs.fileOutput, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
@@ -727,7 +749,7 @@ function newOwnerTrade() {
     var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
     //Encrypt Hash with new owner address
-    DiceFile.unit = Buffer.from(DiceFile.unit,"base64").toString("hex");
+    DiceFile.unit = Buffer.from(DiceFile.unit, "base64").toString("hex");
     var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
     //Logic for application is to trade an already mined unit which is stored in FS
@@ -749,4 +771,16 @@ function printServerReturnData(data) {
     view_console.printCode("USER_INFO", "UsInf0070", response.data.diceValue);
     view_console.printCode("USER_INFO", "UsInf0071", response.data.hash);
     view_console.printCode("USER_INFO", "UsInf0072");
+}
+
+function getAddrOperatorFromDICEUnit() {
+    if (appArgs.diceUnit !== undefined) {
+        appArgs.addrOp = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+    }
+}
+
+function getAddrOperator() {
+    if (appArgs.addrOp !== undefined) {
+        appArgs.addrOp = AddressGen.convertHexDashToBS58(appArgs.addrOp);
+    }
 }

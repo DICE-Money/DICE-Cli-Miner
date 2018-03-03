@@ -19,26 +19,26 @@ set /p choice="Select from [1..12]"
 echo.
 
 if "%choice%"=="1" (
-    node index.js -c ./examples/miner.json ./out/unitTest.txt UZkGzdE5kA4MpyD1SbczhQxacCN
+    node index.js -c ./examples/miner.json ./out/unitTest.txt 76640bcf-e5476047-5a2ec0a6-c90df2c3-9ef97718
 ) else if "%choice%"=="2" (
     set /p value="Select DICE Value [1/1024..1024]"	
 	goto:diceVal
 ) else if "%choice%"=="3" (
-     node index.js -v  ./examples/miner.json ./out/unitTest.txt UZkGzdE5kA4MpyD1SbczhQxacCN
+     node index.js -v  ./examples/miner.json ./out/unitTest.txt 
 ) else if "%choice%"=="4" (
     node index.js -k keyPair.json
 ) else if "%choice%"=="5" (
-    node index.js -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 243oHkoaZ5MiJPnuLnRcwjqUPx7Q UZkGzdE5kA4MpyD1SbczhQxacCN
+    node index.js -tc ./examples/miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 197eb729-63b0476d-99136024-b45557ab-7f4b9573
 ) else if "%choice%"=="6" (
-    node index.js -tn ./examples/miner2.json ./out/unitEncToM2.txt UZkGzdE5kA4MpyD1SbczhQxacCN rem --inspect-brk
+    node index.js -tn ./examples/miner2.json ./out/unitEncToM2.txt  rem --inspect-brk
 ) else if "%choice%"=="7" (
-    node index.js -to ./examples/miner2.json ./out/unitTest.txt UZkGzdE5kA4MpyD1SbczhQxacCN
+    node index.js -to ./examples/miner2.json ./out/unitTest.txt 
 ) else if "%choice%"=="8" (
-    node index.js -tn ./examples/miner2.json ./out/unitTest.txt UZkGzdE5kA4MpyD1SbczhQxacCN
+    node index.js -tn ./examples/miner2.json ./out/unitTest.txt 
 ) else if "%choice%"=="9" (
-    node index.js -cc ./examples/miner.json ./out/unitTest.txt UZkGzdE5kA4MpyD1SbczhQxacCN
+    node index.js -cc ./examples/miner.json ./out/unitTest.txt 76640bcf-e5476047-5a2ec0a6-c90df2c3-9ef97718
 ) else if "%choice%"=="10" (
-    node index.js -r ./examples/miner.json ./out/unitTest.txt UZkGzdE5kA4MpyD1SbczhQxacCN
+    node index.js -r ./examples/miner.json ./out/unitTest.txt 
 ) else if "%choice%"=="11" (
     node index.js -ver
 ) else if "%choice%"=="12" (

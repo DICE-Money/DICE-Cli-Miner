@@ -25,8 +25,8 @@
  */
 
 //Application version
-const version = 
-"Copyright (c) 2017, Mihail Maldzhanski <pollarize@gmail.com>\n\
+const version =
+        "Copyright (c) 2017, Mihail Maldzhanski <pollarize@gmail.com>\n\
 DICE Money <www.dice.money> - Miner Application Version[1.35]";
 
 //Application states
@@ -59,7 +59,7 @@ const appStates = {
 
 //Data stored buffer from console arguments
 const Args = {
-    fileInput: undefined,
+    keyPair: undefined,
     diceUnit: undefined,
     fileOutput: undefined,
     addrOp: undefined,
@@ -70,14 +70,14 @@ const Args = {
 //Command execution table
 const CommandsTable =
         [
-            {args: ['-c', '--calculate'], dataArgs: ['fileInput', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
-            {args: ['-v', '--validate'], dataArgs: ['fileInput', 'diceUnit', 'addrOp'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
+            {args: ['-c', '--calculate'], dataArgs: ['keyPair', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
+            {args: ['-v', '--validate'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
             {args: ['-k', '--keygen'], dataArgs: ['fileOutput'], exec: 'funcKeyGen', help: "Generate new KeyPair of Digital Address and Private Key"},
-            {args: ['-to', '--tradeOwnerless'], dataArgs: ['fileInput', 'diceUnit', 'addrOp'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
-            {args: ['-tc', '--tradeCurrent'], dataArgs: ['fileInput', 'diceUnit', 'fileOutput', 'addrMin', 'addrOp'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
-            {args: ['-tn', '--tradeNew'], dataArgs: ['fileInput', 'diceUnit', 'addrOp'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
-            {args: ['-cc', '--calculateCuda'], dataArgs: ['fileInput', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
-            {args: ['-r', '--register'], dataArgs: ['fileInput', 'diceUnit', 'addrOp'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
+            {args: ['-to', '--tradeOwnerless'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
+            {args: ['-tc', '--tradeCurrent'], dataArgs: ['keyPair', 'diceUnit', 'fileOutput', 'addrMin', 'addrOp'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
+            {args: ['-tn', '--tradeNew'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
+            {args: ['-cc', '--calculateCuda'], dataArgs: ['keyPair', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
+            {args: ['-r', '--register'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
             {args: ['-ver', '--version'], dataArgs: [], exec: 'funcVersion', help: "Prints application current version"},
             {args: ['-h', '--help'], dataArgs: [], exec: 'funcHelp', help: "Print Following list"}
         ];
@@ -102,6 +102,9 @@ const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
 //path to DNS binder
 const dnsFile = {path: '../DNS_DB/dns.json', type: 'json'};
 
+//Security Config tries
+const securityLevels = ["general", "advanced", "heavy"];
+
 //Exported config
 module.exports.minerArgs = Args;
 module.exports.minerStates = appStates;
@@ -112,3 +115,4 @@ module.exports.minerViewOut = viewModelOutput;
 module.exports.minerVIEW_IF = confAppViewIF;
 module.exports.minerDnsFile = dnsFile;
 module.exports.minerVersion = version;
+module.exports.minerSecurityLevels = securityLevels;
