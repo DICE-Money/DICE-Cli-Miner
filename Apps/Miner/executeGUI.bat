@@ -1,6 +1,27 @@
 @echo off
-rem Print version of the application
-Miner.exe -ver
+if exist Miner.exe (
+set application=Miner.exe
+) else (
+set application=node index.js
+)
+
+rem Print Version of the Tool
+%application% -ver
+
+if exist ./defaultConfig.json (
+   rem file exists
+) else (
+echo Creating configration file
+set /p cfgName="What is your name? "
+set /p cfgKeys="Select path to your keys "
+)
+
+rem Create Configuration
+if exist ./defaultConfig.json (
+ rem file exists
+) else (
+%application% -cCfg "%cfgName%" "%cfgKeys%"
+)
 
 :choosing
 echo.
@@ -12,18 +33,18 @@ echo    (4) to mine new DICE
 echo    (5) to export my encryption keys
 echo.
 
-set /p choice="Select from [1..5]"
+set /p choice="Select from [1..5] "
 
 if "%choice%"=="1" (
 goto:sendDice
 ) else if "%choice%"=="2" (
-goto:choosing
+goto:claimOwnership
 ) else if "%choice%"=="3" (
 goto:validateDice
 ) else if "%choice%"=="4" (
 goto:mineNewDice
 ) else if "%choice%"=="5" (
-goto:choosing
+goto:exportKeys
 ) else (
     echo "Invalid Choice. Try Again" 
 )
@@ -31,7 +52,7 @@ goto:choosing
 goto:choosing
 	
 :diceVal
-node index.js -cc ./examples/miner.json ./out/unitTest.txt 3S4pihKB27NVrhCbH5PTugbiwo6 %value%
+%application% -cc ./examples/miner.json ./out/unitTest.txt 3S4pihKB27NVrhCbH5PTugbiwo6 %value%
 goto:choosing
 
 :sendDice
@@ -40,26 +61,32 @@ echo Who is the new owner?
 set /p newOwner="Enter valid digital address or enter "FREE" for ownerless " 
 
 if "%newOwner%"=="FREE" (
-set /p storeFile="Where to store the encrypted file? " 
- Miner.exe -to ./examples/miner2.json %dice%
+rem nothing
 ) else (
- Miner.exe -tc ./examples/miner.json %dice% %storeFile% %newOwner%
+set /p storeFile="Where to store the encrypted file? " 
+)
+
+if "%newOwner%"=="FREE" (
+%application% -to %dice% 
+) else (
+%application% -tc %dice% %storeFile% %newOwner%
 )
 goto:choosing
 
 :claimOwnership
 set /p dice="Choose Encrypted DICE "
 rem set /p storeFile="Where to store the DICE?"
- Miner.exe -tn ./examples/miner2.json %dice%
+%application% -tn %dice%
 goto:choosing
 
 :validateDice
 set /p dice="Choose DICE to validate "
-Miner.exe -v  ./examples/miner.json %dice%
+%application% -v %dice%
 goto:choosing
 
 :mineNewDice
 set /p operatorAddr="What is the operator DICE address? "
+set /p storeFile="Where to store the DICE Unit file? " 
 
 :mineNewDiceChooseUnit
 set /p minimumValue="What minimum unit value to mine? (-10...10) "
@@ -110,17 +137,12 @@ echo Invalid Unit Size. Try Again
 goto:mineNewDiceChooseUnit
 )
 
-Miner.exe -cc ./examples/miner.json ./out/unitTest.txt %operatorAddr% %value%
+%application% -cc %storeFile% %operatorAddr% %value%
 goto:choosing
 
 :exportKeys
+set /p storeFile="Where to save keys? "
+%application% -eK %storeFile%
 goto:choosing
-
-
-:: calculate 2^n 
-SET n=%minimumValue%
-SET result=1
-FOR /L %%i IN (1,1,%n%) DO SET /A result*=x
-ECHO %result%
 
 pause

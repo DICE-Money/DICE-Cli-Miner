@@ -37,6 +37,7 @@ const modEnc = require('../../models/Encryptor/Encryptor_Signer.js');
 const modBase58 = require('../../models/Base58/Base58.js');
 const modVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
 const modCommandParser = require('../../models/CommandParser/CommandParser.js');
+const modControllers = require('./Controllers/controllers.js');
 
 //Configuration
 const exConfig = require('./config/minerConfig.js');
@@ -56,7 +57,6 @@ var CommandParser = new modCommandParser(process.argv, exConfig.minerArgs);
 
 //Local static Data`
 var isRequestTransmitted = false;
-var appArgs = CommandParser.getArgs();
 var currentState = CommandParser.getState();
 var keyPair = {};
 var scheduler_10ms = undefined;
@@ -66,9 +66,15 @@ var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerV
 view_console.setAllowed(exConfig.minerViewCfg);
 var isCudaReq = false;
 var securityCounter = 0;
+var isTcpReady = false;
+var isDnsHttpRequested = false;
+
+//Check Addresses
+var appArgs = JSON.parse(modControllers.checkConfig);
 
 const commandFunctions =
         {
+            "funcUpdateDns": funcUpdateDns,
             "funcCalculate": funcCalculate,
             'funcValidate': funcValidate,
             'funcKeyGen': funcKeyGen,
@@ -100,9 +106,16 @@ function funcCalculate() {
                 getAddrOperator();
 
                 //Init connection
-                initTcpConnection();
+                dnsInitialization();
 
-                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
@@ -120,7 +133,6 @@ function funcCalculate() {
                         (addr) => TCPClient.Request("GET Validation", addr),
                         (receivedData) => {
                     receivedData = JSON.parse(receivedData);
-
                     //Calculate needed zeroes
                     if (appArgs.specificUnitValue !== undefined) {
                         view_console.printCode("USER_INFO", "UsInf0051", appArgs.specificUnitValue);
@@ -191,9 +203,16 @@ function funcValidate() {
                 getAddrOperatorFromDICEUnit();
 
                 //Init connection
-                initTcpConnection();
+                dnsInitialization();
 
-                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
@@ -252,9 +271,16 @@ function funcTradeOwnerless() {
                 getAddrOperatorFromDICEUnit();
 
                 //Init Connections
-                initTcpConnection();
+                dnsInitialization();
 
-                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
@@ -299,9 +325,16 @@ function funcTradeCurrent() {
                 var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
                 DICE = DICE.fromBS58(file);
                 getAddrOperatorFromDICEUnit();
-                initTcpConnection();
+                dnsInitialization();
                 curOwnerTrade();
-                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
@@ -354,8 +387,15 @@ function funcTradeNew() {
                     getKeyPair();
                 }
                 getAddrOperatorFromDICEUnit();
-                initTcpConnection();
-                currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                dnsInitialization();
+                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
@@ -410,14 +450,22 @@ function funcRegister() {
     getAddrOperatorFromDICEUnit();
 
     //Init connection
-    initTcpConnection();
+    dnsInitialization();
 
     //Start scheduled program
     scheduler_10ms = setInterval(main10ms, 10);
-    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+    currentState = exConfig.minerStates.eStep_DnsBinderWait;
 
     function main10ms() {
         switch (currentState) {
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
+                break;
+
             case exConfig.minerStates.eStep_ExchangeCertificates:
                 executeExchangeCertificate(exConfig.minerStates.eStep_RequestValidation);
                 break;
@@ -461,8 +509,18 @@ function funcRegister() {
     }
 }
 
+function funcUpdateDns() {
+    //Delete file
+    modFs.unlink(exConfig.minerDnsFile.path, () => {    
+        //Download
+        dnsInitialization(funcExit);
+        view_console.printCode("USER_INFO", "UsInf0089");
+    });
+}
+
 function funcHelp() {
     var text = CommandParser.getHelpString(exConfig.minerCommandTable);
+    view_console.print("\n" + exConfig.minerVersion + "\n");
     view_console.print(text);
 }
 
@@ -501,8 +559,11 @@ function funcERROR() {
 var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
 
 //Execute function 
-commandFunctions[funcName]();
+try {
+    commandFunctions[funcName]();
+} catch (e) {
 
+}
 
 //#############################################################################
 // Local Help function
@@ -630,10 +691,27 @@ function hashOfUnit() {
 }
 
 //Init TCP Connection
-function initTcpConnection() {
-
+function dnsInitialization(callback) {
     //Initialize DNS
-    DNS.initializeDB(exConfig.minerDnsFile.path, exConfig.minerDnsFile.type);
+    if (modFs.existsSync(exConfig.minerDnsFile.path) && isDnsHttpRequested === false) {
+        DNS.initializeDB(exConfig.minerDnsFile.path, exConfig.minerDnsFile.type);
+        isTcpReady = true;
+    } else {
+        if (!isDnsHttpRequested) {
+            DNS.readFromHttpServer(exConfig.minerHttpDns, () => {
+                isTcpReady = true;
+                if (callback !== undefined) {
+                    callback();
+                }
+            });
+            isDnsHttpRequested = true;
+        }
+    }
+}
+
+function continueInitconnection() {
+    //Set Tcp to ready
+    isTcpReady = true;
 
     //Requst DNS Binder to get IP and PORT
     var serverData;
@@ -643,11 +721,16 @@ function initTcpConnection() {
         serverData = DNS.lookup(AddressGen.convertHexToHexDash(appArgs.addrOp));
     }
 
-    //Create connection
-    TCPClient.create("client", serverData.ip, serverData.port, () => {
-        view_console.printCode("ERROR", "Err0001");
-        currentState = exConfig.minerStates.eExit_FromApp;
-    }, view_console);
+    try {
+        //Create connection
+        TCPClient.create("client", serverData.ip, serverData.port, () => {
+            view_console.printCode("ERROR", "Err0001");
+            currentState = exConfig.minerStates.eExit_FromApp;
+        }, view_console);
+    } catch (e) {
+        view_console.printCode("ERROR", "Err0008", e);
+        funcExit();
+    }
 }
 
 //Read key pair from file
@@ -729,7 +812,7 @@ function curOwnerTrade() {
     //Preapare data for storing
     var fsData = {};
     fsData['addr'] = keyPair.digitalAddress;
-    fsData['unit'] = Buffer.from(encData, "hex").toString("base64");
+    fsData['unit'] = encData;
 
     //Save to file
     modFs.writeFileSync(appArgs.fileOutput, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
@@ -749,7 +832,6 @@ function newOwnerTrade() {
     var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
     //Encrypt Hash with new owner address
-    DiceFile.unit = Buffer.from(DiceFile.unit, "base64").toString("hex");
     var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
     //Logic for application is to trade an already mined unit which is stored in FS

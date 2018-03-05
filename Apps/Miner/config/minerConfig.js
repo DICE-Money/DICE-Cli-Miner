@@ -53,31 +53,55 @@ const appStates = {
     //Idle
     eStep_IDLE: 14,
 
-    eExit_FromApp: 14,
-    eStep_Count: 15
+    //DNS Downloading
+    eStep_DnsBinderWait: 15,
+
+    eExit_FromApp: 16,
+    eStep_Count: 17
 };
 
 //Data stored buffer from console arguments
 const Args = {
+    configurationFile: undefined,
     keyPair: undefined,
     diceUnit: undefined,
     fileOutput: undefined,
     addrOp: undefined,
     addrMin: undefined,
-    specificUnitValue: undefined
+    specificUnitValue: undefined,
+    nameOfOwner: undefined,
+    externalConfigurationFile: undefined,
+    nameOfContact: undefined,
+    nameOfOperator: undefined,
+    digitalAddrOfContact: undefined,
+    digitalAddrOfOperator: undefined
 };
 
 //Command execution table
 const CommandsTable =
         [
-            {args: ['-c', '--calculate'], dataArgs: ['keyPair', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
-            {args: ['-v', '--validate'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
+            //Configration and adressbook
+            {args: ['-cCfg', '--createConfiguration'], dataArgs: ['nameOfOwner', 'keyPair', 'configurationFile'], exec: 'funcCreateCfg', help: "Create Configuration of the current owner."},
+            {args: ['-uCfg', '--updateConfiguration'], dataArgs: ['nameOfOwner', 'keyPair', 'configurationFile'], exec: 'funcUpdateCfg', help: "Update Configuration of the current owner.(Do not delete existing contacts and operators!)"},
+            {args: ['-iCfg', '--importConfiguration'], dataArgs: ['externalConfigurationFile', 'configurationFile'], exec: 'funcImportCfg', help: "Import external configration file."},
+            {args: ['-aC', '--addContact'], dataArgs: ['nameOfContact', 'digitalAddrOfContact', 'configurationFile'], exec: 'funcAddContact', help: "Add new Contact in configuration file."},
+            {args: ['-aO', '--addOperator'], dataArgs: ['nameOfOperator', 'digitalAddrOfOperator', 'configurationFile'], exec: 'funcAddOperator', help: "Add new Operator in configration file."},
+            {args: ['-eAc', '--exportAllContacts'], dataArgs: ['externalConfigurationFile', 'configurationFile'], exec: '', help: "Export all Contacts from local configuration file."},
+            {args: ['-eAo', '--exportAllOperators'], dataArgs: ['externalConfigurationFile', 'configurationFile'], exec: '', help: "Export all Operators from local configration file."},
+            {args: ['-lO', '--listOperators'], dataArgs: ['configurationFile'], exec: 'funcListOperators', help: "List all Operators in confgiration file."},
+            {args: ['-lC', '--listOperators'], dataArgs: ['configurationFile'], exec: 'funcListContacts', help: "List all Operators in confgiration file."},
+            {args: ['-eK', '--exportKeys'], dataArgs: ['fileOutput', 'configurationFile'], exec: 'funcExportKeys', help: "Export keys saved in configuration file."},
+
+            //General Use Commands
+            {args: ['-uDns', '--updateDnsBinder'], dataArgs: [], exec: 'funcUpdateDns', help: "Downaload latest version of dns binder file."},
+            {args: ['-c', '--calculate'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
+            {args: ['-v', '--validate'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
             {args: ['-k', '--keygen'], dataArgs: ['fileOutput'], exec: 'funcKeyGen', help: "Generate new KeyPair of Digital Address and Private Key"},
-            {args: ['-to', '--tradeOwnerless'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
-            {args: ['-tc', '--tradeCurrent'], dataArgs: ['keyPair', 'diceUnit', 'fileOutput', 'addrMin', 'addrOp'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
-            {args: ['-tn', '--tradeNew'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
-            {args: ['-cc', '--calculateCuda'], dataArgs: ['keyPair', 'fileOutput', 'addrOp', 'specificUnitValue'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
-            {args: ['-r', '--register'], dataArgs: ['keyPair', 'diceUnit'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
+            {args: ['-to', '--tradeOwnerless'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
+            {args: ['-tc', '--tradeCurrent'], dataArgs: ['diceUnit', 'fileOutput', 'addrMin', 'keyPair'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
+            {args: ['-tn', '--tradeNew'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
+            {args: ['-cc', '--calculateCuda'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
+            {args: ['-r', '--register'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
             {args: ['-ver', '--version'], dataArgs: [], exec: 'funcVersion', help: "Prints application current version"},
             {args: ['-h', '--help'], dataArgs: [], exec: 'funcHelp', help: "Print Following list"}
         ];
@@ -100,10 +124,18 @@ const viewModelOutput = 'code';
 const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
 
 //path to DNS binder
-const dnsFile = {path: '../DNS_DB/dns.json', type: 'json'};
+const dnsFile = {path: './dns.json', type: 'json'};
+
+//Default path to config file
+const configFile = "defaultConfig.json";
 
 //Security Config tries
 const securityLevels = ["general", "advanced", "heavy"];
+
+//HTTP DNS
+//const httpsDns = "https://drive.google.com/uc?id=1QHFoQckGksPWsstb4tQc0locVVPuPjZ-&export=download";
+const httpsDns = "https://doc-0s-0g-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/h0a39q6n4t506ujt3qesvl089lbnq4g9/1520236800000/16207732906237138238/*/1QHFoQckGksPWsstb4tQc0locVVPuPjZ-?e=download";
+const httpDns = "http://192.168.1.90/DICE/dns.json";
 
 //Exported config
 module.exports.minerArgs = Args;
@@ -116,3 +148,5 @@ module.exports.minerVIEW_IF = confAppViewIF;
 module.exports.minerDnsFile = dnsFile;
 module.exports.minerVersion = version;
 module.exports.minerSecurityLevels = securityLevels;
+module.exports.minerConfigFile = configFile;
+module.exports.minerHttpDns = httpsDns;
