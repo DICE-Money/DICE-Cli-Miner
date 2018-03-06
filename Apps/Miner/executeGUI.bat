@@ -8,22 +8,35 @@ set application=node index.js
 rem Print Version of the Tool
 %application% -ver
 
-if exist ./defaultConfig.json (
+if exist ./*.dconf (
    rem file exists
 ) else (
 echo Creating configration file
-set /p cfgName="What is your name? "
-set /p cfgKeys="Select path to your keys "
+set /p cfgName="What is your name(optional)? "
+set cfgKeys=./keys
 )
 
 rem Create Configuration
-if exist ./defaultConfig.json (
+if exist ./defaultConfig.dconf (
  rem file exists
 ) else (
-%application% -cCfg "%cfgName%" "%cfgKeys%"
+echo Created new keys
+%application% -k "%cfgKeys%"
+echo.
+echo #######################################
+echo # DO NOT GIVE TO ANYONE YOUR KEYS !!! #
+echo # YOUR KEYS CAN NOT BE RECOVERED  !!! #
+echo #######################################
+echo.
+echo Created new configuration
+%application% -cCfg "%cfgName%" "%cfgKeys%".dkeys
 )
 
 :choosing
+echo.
+echo ###########################################################
+echo Current Digital Address                
+%application% -pD
 echo.
 echo What do you want to do ?  
 echo    (1) to send or release DICE that I own
@@ -32,7 +45,6 @@ echo    (3) to validate DICE
 echo    (4) to mine new DICE
 echo    (5) to export my encryption keys
 echo.
-
 set /p choice="Select from [1..5] "
 
 if "%choice%"=="1" (
@@ -133,11 +145,13 @@ set value="512"
 ) else if "%minimumValue%"=="10" (
 set value="1024"
 ) else (
-echo Invalid Unit Size. Try Again
-goto:mineNewDiceChooseUnit
+set noValue="true"
 )
-
+if "%noValue%"=="true" ( 
+%application% -cc %storeFile% %operatorAddr%
+) else (
 %application% -cc %storeFile% %operatorAddr% %value%
+)
 goto:choosing
 
 :exportKeys

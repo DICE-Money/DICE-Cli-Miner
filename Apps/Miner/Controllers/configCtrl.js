@@ -44,6 +44,7 @@ var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerV
 //#############################################################################
 const commandFunctions =
         {
+            "funcPrintDA": funcPrintDA,
             "funcAddContact": funcAddContact,
             "funcExportKeys": funcExportKeys,
             "funcAddOperator": funcAddOperator,
@@ -64,7 +65,15 @@ var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
 //Check for config
 if (appArgs.configrationFile === undefined ||
         appArgs.configurationFile === "") {
-    appArgs.configurationFile = exConfig.minerConfigFile;
+    if (modFs.exists(exConfig.minerConfigFile)) {
+        modFs.readdirSync("./").forEach(file => {
+            if (file.indexOf(exConfig.minerExtensions.conf) !== -1) {
+                appArgs.configurationFile = file;
+            }
+        });
+    } else {
+        appArgs.configurationFile = exConfig.minerConfigFile;
+    }
 }
 
 //Update Instance
@@ -92,11 +101,11 @@ function funcImportCfg() {
 }
 
 function funcListOperators() {
-    console.log(cfgWorker.GetOperatorsToString());
+    view_console.print(cfgWorker.GetOperatorsToString());
 }
 
 function funcListContacts() {
-    console.log(cfgWorker.GetContactsToString());
+    view_console.print(cfgWorker.GetContactsToString());
 }
 
 function funcAddContact() {
@@ -114,9 +123,15 @@ function funcUpdateCfg() {
     cfgWorker.SetKeysPath(appArgs.keyPair);
 }
 
-function funcExportKeys(){
+function funcExportKeys() {
     var path = cfgWorker.GetKeysPath();
-    modFs.writeFileSync(appArgs.fileOutput,modFs.readFileSync(path));
+    modFs.writeFileSync(appArgs.fileOutput, modFs.readFileSync(path));
+}
+
+function funcPrintDA() {
+    var keys = modFs.readFileSync(cfgWorker.GetKeysPath());
+    keys = JSON.parse(keys);
+    view_console.print(keys.digitalAddress);
 }
 
 //#############################################################################

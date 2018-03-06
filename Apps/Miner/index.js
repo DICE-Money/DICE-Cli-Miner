@@ -415,7 +415,7 @@ function funcTradeNew() {
                 },
                         (response) => {
                     printServerReturnData(response);
-                    saveDICEToFile(appArgs.diceUnit + ".decompressed.txt");
+                    saveDICEToFile(appArgs.diceUnit + exConfig.minerExtensions.unit);
                     currentState = exConfig.minerStates.eExit_FromApp;
                 });
                 break;
@@ -679,10 +679,10 @@ function saveDICEToFile(fileOutput) {
     view_console.printCode("USER_INFO", "UsInf0057", fileOutput);
 
     //Write to File
-    modFs.writeFileSync(fileOutput, DICE.toBS58());
+    modFs.writeFileSync(fileOutput+exConfig.minerExtensions.unit, DICE.toBS58());
 
     //Write to File
-    modFs.writeFileSync(fileOutput + ".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');
+    //modFs.writeFileSync(fileOutput + ".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');
 }
 
 //Calculate Hash
@@ -698,7 +698,7 @@ function dnsInitialization(callback) {
         isTcpReady = true;
     } else {
         if (!isDnsHttpRequested) {
-            DNS.readFromHttpServer(exConfig.minerHttpDns, () => {
+            DNS.getGoogleDriveData(exConfig.minerHttpDns, () => {
                 isTcpReady = true;
                 if (callback !== undefined) {
                     callback();
@@ -764,7 +764,7 @@ function saveKeyPair() {
         view_console.printCode("DEV_INFO", "DevInf0112", AddressGen.getDigitalAdress('hex'));
 
         //Save to file
-        modFs.writeFileSync(appArgs.fileOutput, JSON.stringify(keyPair), 'utf8');
+        modFs.writeFileSync(appArgs.fileOutput+exConfig.minerExtensions.key, JSON.stringify(keyPair), 'utf8');
     } else {
         //Nothing
     }
@@ -815,7 +815,7 @@ function curOwnerTrade() {
     fsData['unit'] = encData;
 
     //Save to file
-    modFs.writeFileSync(appArgs.fileOutput, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
+    modFs.writeFileSync(appArgs.fileOutput+exConfig.minerExtensions.unitEnc, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
     return hashOfUnit;
 }
 
