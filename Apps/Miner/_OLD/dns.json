@@ -1,0 +1,11 @@
+{
+    "76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718": {
+        "ip": "127.0.0.1",
+        "port": "1993"
+	},
+    "d8f54-4fe68-98060-78b6d-bbbf3-1908b-473de-ed2b2": {
+        "system":"Orange Pi Zero - Allwinner H2+ - 256MB RAM - 4GB ROM",
+        "ip": "37.157.174.99",
+        "port": "2016"
+    }
+}

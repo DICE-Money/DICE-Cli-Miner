@@ -26,8 +26,8 @@
 
 //Application version
 const version =
-        "Copyright (c) 2017, Mihail Maldzhanski <pollarize@gmail.com>\n\
-DICE Money <www.dice.money> - Miner Application Version[1.40]";
+        "Copyright (c) 2018, Mihail Maldzhanski <pollarize@gmail.com>\n\
+DICE Money <www.dice.money> - Miner Application Version[1.41] - 06.03.2018";
 
 //Application states
 const appStates = {
@@ -91,6 +91,7 @@ const CommandsTable =
             {args: ['-lO', '--listOperators'], dataArgs: ['configurationFile'], exec: 'funcListOperators', help: "List all Operators in confgiration file."},
             {args: ['-lC', '--listOperators'], dataArgs: ['configurationFile'], exec: 'funcListContacts', help: "List all Operators in confgiration file."},
             {args: ['-eK', '--exportKeys'], dataArgs: ['fileOutput', 'configurationFile'], exec: 'funcExportKeys', help: "Export keys saved in configuration file."},
+            {args: ['-pD', '--printDigitalAddress'], dataArgs: ['configurationFile'], exec: 'funcPrintDA', help: "Print Digital Address from configuration file."},
 
             //General Use Commands
             {args: ['-uDns', '--updateDnsBinder'], dataArgs: [], exec: 'funcUpdateDns', help: "Downaload latest version of dns binder file."},
@@ -107,7 +108,7 @@ const CommandsTable =
         ];
 
 //Path to CUDA application
-const pathToCudaApp = "../CUDA/DICECalculator.exe";
+const pathToCudaApp = "./CUDA/DICECalculator.exe";
 
 //View output allowed type of codes
 const viewModelCfg = {
@@ -120,6 +121,12 @@ const viewModelCfg = {
 //Ex: 'text' 'code' 'rpc'
 const viewModelOutput = 'code';
 
+//Default extentions
+const configExt = ".dconf";
+const keyExt = ".dkeys";
+const unitExt = ".dice";
+const unitEncExt = ".diceEnc";
+
 //View Interfaces
 const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
 
@@ -127,14 +134,13 @@ const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
 const dnsFile = {path: './dns.json', type: 'json'};
 
 //Default path to config file
-const configFile = "defaultConfig.json";
+const configFile = "defaultConfig" + configExt;
 
 //Security Config tries
 const securityLevels = ["general", "advanced", "heavy"];
 
 //HTTP DNS
-//const httpsDns = "https://drive.google.com/uc?id=1QHFoQckGksPWsstb4tQc0locVVPuPjZ-&export=download";
-const httpsDns = "https://doc-0s-0g-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/h0a39q6n4t506ujt3qesvl089lbnq4g9/1520236800000/16207732906237138238/*/1QHFoQckGksPWsstb4tQc0locVVPuPjZ-?e=download";
+const httpsDns = "https://drive.google.com/uc?id=1QHFoQckGksPWsstb4tQc0locVVPuPjZ-&export=download";
 const httpDns = "http://192.168.1.90/DICE/dns.json";
 
 //Exported config
@@ -150,3 +156,4 @@ module.exports.minerVersion = version;
 module.exports.minerSecurityLevels = securityLevels;
 module.exports.minerConfigFile = configFile;
 module.exports.minerHttpDns = httpsDns;
+module.exports.minerExtensions = {unit:unitExt,key:keyExt,conf:configExt,unitEnc: unitEncExt};
