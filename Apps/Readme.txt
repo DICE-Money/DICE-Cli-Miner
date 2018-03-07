@@ -1,6 +1,26 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.42 File Extensions - 06.03.2018
+-Update noted changes for file extensions and .dconf auto find in directory.
+-Add general start points for delayed security level update (Not Finished).
+-Re-factor Code(Nothing added).
+-Add Google Drive Dynamic path finder.
+-Remove DNS Binder. Add static configuration of operator.
+-Update with new Messages and Errors
+-Remove old  units, add Controllers and instance of Configuration controller. 
+ New Commands to use contacts bank. New Bat file to use program. 
+ Google Drive remote DNS binder file.
+-Add remote downloading of dns binder file.
+-Add initial revision of ContactWorker(Configuration Worker).
+-Remove checking of arguments count
+
+Revision 1.40 Miner configuration and address book - 03.03.2018
+-Added triple encryption levels: general=256, advanced=384, heavy=521
+-Added Initial revision of proxy server(later use for multi-system cluster model)
+-Added digital address format of "HexDash"
+-Optimize tcp/ip communication protocol to use 1/3 less memory
+
 Revision 1.35 TCP Secure Protocol Optimization - 18.02.2018
 - Parallel model for operator application
 - Bug fixes of communication protocol
@@ -64,8 +84,6 @@ Revision 1.1 Trading - 10.12.2017
 	- Miner and Server communication
 	- Refactoring of some components
 	- Support of SHA3-C library in Standalone applications
-
-
 	
 Revision 1.0 Initial - 06.12.2017
 - Generation of Key pair Digital Address 
