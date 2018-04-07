@@ -24,6 +24,7 @@
     "start": "node Apps/Miner/execute.bat"
   },
   "devDependencies": {
+    "javascript-obfuscator": "^0.14.3",
     "tui-jsdoc-template": "^1.2.2"
   }
 }

@@ -1,3 +1,4 @@
+/* javascript-obfuscator:disable */
 /* 
  * Copyright (c) 2018, Mihail Maldzhanski
  * All rights reserved.
@@ -30,6 +31,7 @@ const modCfg = require('../../../models/ContactsWorker/ContactsWorker.js');
 const modCommandParser = require('../../../models/CommandParser/CommandParser.js');
 const modDigAddress = require('../../../models/AddressCalculator/DigitalAdressCalculator_ECDH.js');
 const modVIEW = require('../../../models/VIEW_Console/VIEW_Console.js');
+/* javascript-obfuscator:enable */
 
 //Init configration worker
 var cfgWorker = new modCfg();
@@ -44,6 +46,7 @@ var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerV
 //#############################################################################
 const commandFunctions =
         {
+            "funcPrintName": funcPrintName,
             "funcPrintDA": funcPrintDA,
             "funcAddContact": funcAddContact,
             "funcExportKeys": funcExportKeys,
@@ -132,6 +135,10 @@ function funcPrintDA() {
     var keys = modFs.readFileSync(cfgWorker.GetKeysPath());
     keys = JSON.parse(keys);
     view_console.print(keys.digitalAddress);
+}
+
+function funcPrintName() {
+    view_console.print(cfgWorker.GetName());
 }
 
 //#############################################################################

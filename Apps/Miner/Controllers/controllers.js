@@ -1,3 +1,4 @@
+/* javascript-obfuscator:disable */
 /* 
  * Copyright (c) 2018, Mihail Maldzhanski
  * All rights reserved.
@@ -26,7 +27,13 @@
 
 //Here can be Added rest of specific Controllers
 const modCfgCtrl = require('./configCtrl.js');
+const modBalanceCtrl = require('./balanceCtrl.js');
+/* javascript-obfuscator:enable */
+
+function setArgs(args){
+    modBalanceCtrl.setArgs(args);
+}
 
 //Exported Interfaces
 module.exports.checkConfig = modCfgCtrl.checkConfig;
-
+module.exports.setArgs = setArgs;

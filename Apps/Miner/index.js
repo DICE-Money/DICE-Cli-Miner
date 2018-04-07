@@ -1,3 +1,4 @@
+/* javascript-obfuscator:disable */
 /* 
  * Copyright (c) 2017, Mihail Maldzhanski
  * All rights reserved.
@@ -42,6 +43,8 @@ const modControllers = require('./Controllers/controllers.js');
 //Configuration
 const exConfig = require('./config/minerConfig.js');
 
+
+/* javascript-obfuscator:enable */
 //Create instances of the following models
 var DICE = new modDICEUnit();
 var DICEProto = new modDICEPrototype();
@@ -72,21 +75,25 @@ var isDnsHttpRequested = false;
 //Check Addresses
 var appArgs = JSON.parse(modControllers.checkConfig);
 
-const commandFunctions =
-        {
-            "funcUpdateDns": funcUpdateDns,
-            "funcCalculate": funcCalculate,
-            'funcValidate': funcValidate,
-            'funcKeyGen': funcKeyGen,
-            'funcTradeOwnerless': funcTradeOwnerless,
-            'funcTradeCurrent': funcTradeCurrent,
-            'funcTradeNew': funcTradeNew,
-            'funcCalculateCUDA': funcCalculateCUDA,
-            'funcRegister': funcRegister,
-            'funcVersion': funcVersion,
-            'funcHelp': funcHelp,
-            'ERROR': funcERROR
-        };
+//Set Global args to other components
+//modControllers.setArgs(appArgs);
+
+const commandFunctions = {
+    'funcBalance': funcBalance,
+    'funcListUnits': funcListUnits,
+    "funcUpdateDns": funcUpdateDns,
+    "funcCalculate": funcCalculate,
+    'funcValidate': funcValidate,
+    'funcKeyGen': funcKeyGen,
+    'funcTradeOwnerless': funcTradeOwnerless,
+    'funcTradeCurrent': funcTradeCurrent,
+    'funcTradeNew': funcTradeNew,
+    'funcCalculateCUDA': funcCalculateCUDA,
+    'funcRegister': funcRegister,
+    'funcVersion': funcVersion,
+    'funcHelp': funcHelp,
+    'ERROR': funcERROR
+};
 
 //#############################################################################
 // Local functions
@@ -415,7 +422,13 @@ function funcTradeNew() {
                 },
                         (response) => {
                     printServerReturnData(response);
-                    saveDICEToFile(appArgs.diceUnit + exConfig.minerExtensions.unit);
+                    if (appArgs.diceUnit === undefined) {
+                        if (!modFs.existsSync(appArgs.diceUnit)) {
+                            saveDICEToFile(appArgs.diceUnit);
+                        }
+                    }else{
+                        saveDICEToFile(appArgs.fileOutput);
+                    }
                     currentState = exConfig.minerStates.eExit_FromApp;
                 });
                 break;
@@ -511,11 +524,31 @@ function funcRegister() {
 
 function funcUpdateDns() {
     //Delete file
-    modFs.unlink(exConfig.minerDnsFile.path, () => {    
+    modFs.unlink(exConfig.minerDnsFile.path, () => {
         //Download
         dnsInitialization(funcExit);
         view_console.printCode("USER_INFO", "UsInf0089");
     });
+}
+
+function funcBalance() {
+    //Get Units
+    var units = extractUnitsRecursivly();
+    var sortedUnits = sortListOfUnits(units);
+
+    //Validate All
+    //validateUnit(units);
+    validateUnitOptimized(sortedUnits);
+}
+
+function funcListUnits() {
+    //Get Units
+    var units = extractUnitsRecursivly();
+    var sortedUnits = sortListOfUnits(units);
+
+    //List all units
+    //listUnit(units);
+    listUnitOptimized(sortedUnits);
 }
 
 function funcHelp() {
@@ -559,11 +592,11 @@ function funcERROR() {
 var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
 
 //Execute function 
-try {
-    commandFunctions[funcName]();
-} catch (e) {
-
-}
+//try {
+commandFunctions[funcName]();
+//} catch (e) {
+//    console.log(e);
+//}
 
 //#############################################################################
 // Local Help function
@@ -633,7 +666,7 @@ function executeExchangeCertificate(nextState) {
             } else {
                 //Exit
                 view_console.printCode("ERROR", "Err0007", e);
-                currentState = exConfig.minerStates.eExit_FromApp;
+                funcExit();
             }
         }
     });
@@ -679,7 +712,7 @@ function saveDICEToFile(fileOutput) {
     view_console.printCode("USER_INFO", "UsInf0057", fileOutput);
 
     //Write to File
-    modFs.writeFileSync(fileOutput+exConfig.minerExtensions.unit, DICE.toBS58());
+    modFs.writeFileSync(fileOutput + exConfig.minerExtensions.unit, DICE.toBS58());
 
     //Write to File
     //modFs.writeFileSync(fileOutput + ".json", JSON.stringify(DICE.toHexStringifyUnit()), 'utf8');
@@ -739,7 +772,10 @@ function getKeyPair() {
         var file = modFs.readFileSync(appArgs.keyPair, "utf8");
         keyPair = JSON.parse(file);
         keyPair = AddressGen.fromHexDash(keyPair);
-        encryptor = new modEnc({private: Bs58.decode(keyPair.privateKey), public: Bs58.decode(keyPair.digitalAddress)}, exConfig.minerSecurityLevels[securityCounter]);
+        encryptor = new modEnc({
+            private: Bs58.decode(keyPair.privateKey),
+            public: Bs58.decode(keyPair.digitalAddress)
+        }, exConfig.minerSecurityLevels[securityCounter]);
     } else {
         //Nothing
     }
@@ -764,7 +800,7 @@ function saveKeyPair() {
         view_console.printCode("DEV_INFO", "DevInf0112", AddressGen.getDigitalAdress('hex'));
 
         //Save to file
-        modFs.writeFileSync(appArgs.fileOutput+exConfig.minerExtensions.key, JSON.stringify(keyPair), 'utf8');
+        modFs.writeFileSync(appArgs.fileOutput + exConfig.minerExtensions.key, JSON.stringify(keyPair), 'utf8');
     } else {
         //Nothing
     }
@@ -815,7 +851,7 @@ function curOwnerTrade() {
     fsData['unit'] = encData;
 
     //Save to file
-    modFs.writeFileSync(appArgs.fileOutput+exConfig.minerExtensions.unitEnc, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
+    modFs.writeFileSync(appArgs.fileOutput + exConfig.minerExtensions.unitEnc, Bs58.encode(Buffer.from(JSON.stringify(fsData))), 'utf8');
     return hashOfUnit;
 }
 
@@ -865,4 +901,549 @@ function getAddrOperator() {
     if (appArgs.addrOp !== undefined) {
         appArgs.addrOp = AddressGen.convertHexDashToBS58(appArgs.addrOp);
     }
+}
+
+function findUnits(folder) {
+    try {
+        var units = [];
+        var folders = [];
+        var indexUnits = 0;
+        var indexFolders = 0;
+        modFs.readdirSync(folder).forEach(file => {
+            if (file.indexOf(exConfig.minerExtensions.unit) !== -1) {
+                units[indexUnits++] = file;
+            } else {
+                folders[indexFolders++] = file;
+            }
+        });
+
+        return {
+            hasMoreFolders: folders.length > 0,
+            units: units,
+            folders: folders
+        };
+    } catch (e) {
+        //Nothing
+    }
+}
+
+function validateUnit(units) {
+    var file = "";
+    var fileIndex = 0;
+    var balance = 0;
+
+    const states = {
+        eState_ReadFile: 0,
+        eState_InitConnection: 1,
+        eState_WaitDNS: 2,
+        eState_ExcahngeCert: 3,
+        eState_RequestOperator: 4,
+        eState_AddValue: 5,
+        eState_SendProto: 6,
+
+        eState_Count: 7
+    };
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = states.eState_ReadFile;
+
+    function main10ms() {
+        switch (currentState) {
+            case states.eState_InitConnection:
+                //Get Data from input file
+                getKeyPair();
+
+                //Get operator address from Dice Unit
+                appArgs.addrOp = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+
+                //Init connection
+                dnsInitialization();
+
+                currentState = states.eState_WaitDNS;
+                break;
+
+            case states.eState_WaitDNS:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = states.eState_ExcahngeCert;
+                }
+                break;
+
+            case states.eState_ExcahngeCert:
+                executeExchangeCertificate(states.eState_RequestOperator);
+                break;
+
+            case states.eState_RequestOperator:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => TCPClient.Request("GET Validation", addr),
+                        (receivedData) => {
+                    receivedData = JSON.parse(receivedData);
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    DICEValue.calculateValue(receivedData.k, receivedData.N);
+                    currentState = states.eState_SendProto;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_SendPrototype:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Prototype", addr, encryptedData);
+                },
+                        (data) => {
+                    var response = JSON.parse(data);
+                    if (response.data.curOwner === AddressGen.convertBS58ToHexDash(keyPair.digitalAddress)) {
+                        currentState = states.eState_AddValue;
+                    } else {
+                        currentState = states.eState_ReadFile;
+                    }
+                });
+                break;
+
+            case states.eState_AddValue:
+                if ((DICEValue.unitValue) !== "InvalidDICE") {
+                    balance += DICEValue.unitValue;
+                }
+                currentState = states.eState_ReadFile;
+                break;
+
+            case states.eState_ReadFile:
+                if (fileIndex < units.length) {
+                    file = modFs.readFileSync(units[fileIndex++], "utf8");
+
+                    //Read DICE Unit from file
+                    try {
+                        DICE = DICE.from(file);
+                    } catch (e) {
+                        DICE = DICE.fromBS58(file);
+                    }
+
+                    //Clean security levels
+                    securityCounter = 0;
+                    currentState = states.eState_InitConnection;
+
+                } else {
+                    view_console.printCode("USER_INFO", "UsInf0090", balance);
+                    funcExit();
+                }
+
+                break;
+
+            default:
+            //Nothing
+        }
+    }
+}
+
+function validateUnitOptimized(units) {
+    var fileIndex = 0;
+    var balance = 0;
+    var valData = {k: undefined, N: undefined};
+
+    const states = {
+
+        //New Operator Specific
+        eState_InitConnection: 0,
+        eState_WaitDNS: 1,
+        eState_ExcahngeCert: 2,
+
+        //Get Global TH
+        eState_RequestOperator: 3,
+
+        //Add new Value
+        eState_AddValue: 4,
+        eState_SendProto: 5,
+
+        eState_Count: 7
+    };
+
+    //Read keys
+    getKeyPair();
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 0);
+    currentState = states.eState_InitConnection;
+
+    function main10ms() {
+        switch (currentState) {
+            case states.eState_InitConnection:
+                //Get operator from unit
+                appArgs.addrOp = units[fileIndex].op;
+
+                //Init connection
+                dnsInitialization();
+
+                currentState = states.eState_WaitDNS;
+                break;
+
+            case states.eState_WaitDNS:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = states.eState_ExcahngeCert;
+                }
+                break;
+
+            case states.eState_ExcahngeCert:
+                executeExchangeCertificate(states.eState_RequestOperator);
+                break;
+
+            case states.eState_RequestOperator:
+                if (valData.k === undefined) {
+                    requestToServer(keyPair.digitalAddress,
+                            (addr) => TCPClient.Request("GET Validation", addr),
+                            (receivedData) => {
+                        receivedData = JSON.parse(receivedData);
+                        valData.k = receivedData.k;
+                        valData.N = receivedData.N;
+                        currentState = exConfig.minerStates.eStep_SendPrototype;
+                    });
+                } else {
+                    currentState = exConfig.minerStates.eStep_SendPrototype;
+                }
+                break;
+
+            case exConfig.minerStates.eStep_SendPrototype:
+                if (fileIndex < units.length) {
+                    var curOp = units[fileIndex].op;
+                    if (curOp === appArgs.addrOp) {
+                        requestToServer(keyPair.digitalAddress,
+                                (addr) => {
+                            DICEValue.setDICEProtoFromUnit(units[fileIndex].unit);
+                            var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                            TCPClient.Request("SET Prototype", addr, encryptedData);
+                        },
+                                (data) => {
+                            var response = JSON.parse(data);
+                            if (response.data.curOwner === AddressGen.convertBS58ToHexDash(keyPair.digitalAddress)) {
+                                DICEValue.calculateValue(valData.k, valData.N);
+                                if ((DICEValue.unitValue) !== "InvalidDICE") {
+                                    balance += DICEValue.unitValue;
+                                }
+                            }
+                            fileIndex++;
+                        });
+                    } else {
+                        securityCounter = 0;
+                        currentState = states.eState_InitConnection;
+                    }
+                } else {
+                    view_console.printCode("USER_INFO", "UsInf0090", balance);
+                    funcExit();
+                }
+
+                break;
+
+            default:
+            //Nothing
+        }
+    }
+}
+
+function listUnit(units) {
+    var file = "";
+    var fileIndex = 0;
+    var unitsData = [];
+    var curOwnwer = "";
+
+    const states = {
+        eState_ReadFile: 0,
+        eState_InitConnection: 1,
+        eState_WaitDNS: 2,
+        eState_ExcahngeCert: 3,
+        eState_RequestOperator: 4,
+        eState_AddValue: 5,
+        eState_SendProto: 6,
+
+        eState_Count: 7
+    };
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = states.eState_ReadFile;
+
+    function main10ms() {
+        switch (currentState) {
+            case states.eState_InitConnection:
+                //Get Data from input file
+                getKeyPair();
+
+                //Get operator address from Dice Unit
+                appArgs.addrOp = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+
+                //Init connection
+                dnsInitialization();
+
+                currentState = states.eState_WaitDNS;
+                break;
+
+            case states.eState_WaitDNS:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = states.eState_ExcahngeCert;
+                }
+                break;
+
+            case states.eState_ExcahngeCert:
+                executeExchangeCertificate(states.eState_RequestOperator);
+                break;
+
+            case states.eState_RequestOperator:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => TCPClient.Request("GET Validation", addr),
+                        (receivedData) => {
+                    receivedData = JSON.parse(receivedData);
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    DICEValue.calculateValue(receivedData.k, receivedData.N);
+                    currentState = states.eState_SendProto;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_SendPrototype:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET Prototype", addr, encryptedData);
+                },
+                        (data) => {
+                    var response = JSON.parse(data);
+                    curOwnwer = response.data.curOwner;
+                    currentState = states.eState_AddValue;
+                });
+                break;
+
+            case states.eState_AddValue:
+                unitsData[fileIndex] = {
+                    name: units[fileIndex],
+                    operator: AddressGen.convertBS58ToHexDash(appArgs.addrOp),
+                    owner: curOwnwer,
+                    value: DICEValue.unitValue
+                };
+                fileIndex++;
+                currentState = states.eState_ReadFile;
+                break;
+
+            case states.eState_ReadFile:
+                if (fileIndex < units.length) {
+                    file = modFs.readFileSync(units[fileIndex], "utf8");
+
+                    //Read DICE Unit from file
+                    try {
+                        DICE = DICE.from(file);
+                    } catch (e) {
+                        DICE = DICE.fromBS58(file);
+                    }
+
+                    //Clean security levels
+                    securityCounter = 0;
+                    currentState = states.eState_InitConnection;
+
+                } else {
+                    printListOfUnits(unitsData);
+                    funcExit();
+                }
+
+                break;
+
+            default:
+            //Nothing
+        }
+    }
+}
+
+function listUnitOptimized(units) {
+    var fileIndex = 0;
+    var balance = 0;
+    var valData = {k: undefined, N: undefined};
+    var unitsData = [];
+
+    const states = {
+
+        //New Operator Specific
+        eState_InitConnection: 0,
+        eState_WaitDNS: 1,
+        eState_ExcahngeCert: 2,
+
+        //Get Global TH
+        eState_RequestOperator: 3,
+
+        //Add new Value
+        eState_AddValue: 4,
+        eState_SendProto: 5,
+
+        eState_Count: 7
+    };
+
+    //Read keys
+    getKeyPair();
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 0);
+    currentState = states.eState_InitConnection;
+
+    function main10ms() {
+        switch (currentState) {
+            case states.eState_InitConnection:
+                //Get operator from unit
+                appArgs.addrOp = units[fileIndex].op;
+
+                //Init connection
+                dnsInitialization();
+
+                currentState = states.eState_WaitDNS;
+                break;
+
+            case states.eState_WaitDNS:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = states.eState_ExcahngeCert;
+                }
+                break;
+
+            case states.eState_ExcahngeCert:
+                executeExchangeCertificate(states.eState_RequestOperator);
+                break;
+
+            case states.eState_RequestOperator:
+                if (valData.k === undefined) {
+                    requestToServer(keyPair.digitalAddress,
+                            (addr) => TCPClient.Request("GET Validation", addr),
+                            (receivedData) => {
+                        receivedData = JSON.parse(receivedData);
+                        valData.k = receivedData.k;
+                        valData.N = receivedData.N;
+                        currentState = exConfig.minerStates.eStep_SendPrototype;
+                    });
+                } else {
+                    currentState = exConfig.minerStates.eStep_SendPrototype;
+                }
+                break;
+
+            case exConfig.minerStates.eStep_SendPrototype:
+                if (fileIndex < units.length) {
+                    var curOp = units[fileIndex].op;
+                    if (curOp === appArgs.addrOp) {
+                        requestToServer(keyPair.digitalAddress,
+                                (addr) => {
+                            DICEValue.setDICEProtoFromUnit(units[fileIndex].unit);
+                            var encryptedData = encryptor.encryptDataPublicKey(DICEValue.getDICEProto().toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                            TCPClient.Request("SET Prototype", addr, encryptedData);
+                        },
+                                (data) => {
+                            var response = JSON.parse(data);
+                            DICEValue.calculateValue(valData.k, valData.N);
+
+                            //Only currrent owner or ownerless
+                            if (response.data.curOwner.length < 2 || response.data.curOwner === AddressGen.convertBS58ToHexDash(keyPair.digitalAddress)) {
+                                unitsData[fileIndex] = {
+                                    name: units[fileIndex].name,
+                                    operator: AddressGen.convertBS58ToHexDash(curOp),
+                                    owner: response.data.curOwner,
+                                    value: DICEValue.unitValue
+                                };
+                            }
+
+                            if (response.data.curOwner === AddressGen.convertBS58ToHexDash(keyPair.digitalAddress)) {
+                                if ((DICEValue.unitValue) !== "InvalidDICE") {
+                                    balance += DICEValue.unitValue;
+                                }
+                            }
+                            fileIndex++;
+                        });
+                    } else {
+                        securityCounter = 0;
+                        currentState = states.eState_InitConnection;
+                    }
+                } else {
+                    printListOfUnits(unitsData);
+                    view_console.printCode("USER_INFO", "UsInf0090", balance);
+                    funcExit();
+                }
+
+                break;
+
+            default:
+            //Nothing
+        }
+    }
+}
+
+
+function printListOfUnits(unitsData) {
+    var index = 1;
+    for (var unit in unitsData) {
+        var unitData = unitsData[unit];
+        view_console.print(`${(index++)} # ${unitData.name} # ${unitData.operator} # ${unitData.owner} # ${unitData.value}`);
+    }
+}
+
+function extractUnitsRecursivly() {
+    var hasMoreFolders = true;
+    var indexOfUnits = 0;
+    var units = [];
+    var currentFolders = [appArgs.folderWithUnits];
+
+    //Extract all units recursivly
+    while (hasMoreFolders) {
+        hasMoreFolders = false;
+        var returnData = {};
+        var newFolders = [];
+        var indexOfNewFolders = 0;
+
+        for (var folder in currentFolders) {
+            //Extract folders and units
+            returnData = findUnits(currentFolders[folder]);
+
+            //Copy Units
+            for (var unit in returnData.units) {
+                units[indexOfUnits++] = `${currentFolders[folder]}/${returnData.units[unit]}`;
+            }
+
+            //Copy New folders
+            for (var newFolder in returnData.folders) {
+                newFolders[indexOfNewFolders++] = `${currentFolders[folder]}/${returnData.folders[newFolder]}`;
+            }
+
+            hasMoreFolders = returnData.hasMoreFolders;
+        }
+        currentFolders = newFolders;
+    }
+    return units;
+}
+
+function sortListOfUnits(units) {
+    //Create buffer object
+    var unitsOrdered = [];
+    var operator = "";
+    var LocalDICE = new modDICEUnit();
+    var file = "";
+
+    //Extract all units operator and data
+    for (var item in units) {
+        file = modFs.readFileSync(units[item], "utf8");
+        LocalDICE = new modDICEUnit();
+
+        //Read DICE Unit from file
+        try {
+            LocalDICE = LocalDICE.from(file);
+        } catch (e) {
+            LocalDICE = LocalDICE.fromBS58(file);
+        }
+
+        //Exract operator
+        operator = Bs58.encode(Buffer.from(LocalDICE.addrOperator, "hex")).toString();
+
+        //Save them to bank
+        unitsOrdered[item] = {
+            name: units[item],
+            op: operator,
+            unit: LocalDICE
+        };
+    }
+
+    unitsOrdered = unitsOrdered.sort(function (a, b) {
+        return a.op > b.op;
+    });
+
+    return unitsOrdered;
 }

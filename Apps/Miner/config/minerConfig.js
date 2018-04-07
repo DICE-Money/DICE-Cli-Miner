@@ -27,7 +27,7 @@
 //Application version
 const version =
         "Copyright (c) 2018, Mihail Maldzhanski <pollarize@gmail.com>\n\
-DICE Money <www.dice.money> - Miner Application Version[1.41] - 06.03.2018";
+DICE Money <www.dice.money> - Miner Application Version[1.45] - 07.04.2018";
 
 //Application states
 const appStates = {
@@ -74,7 +74,8 @@ const Args = {
     nameOfContact: undefined,
     nameOfOperator: undefined,
     digitalAddrOfContact: undefined,
-    digitalAddrOfOperator: undefined
+    digitalAddrOfOperator: undefined,
+    folderWithUnits: undefined
 };
 
 //Command execution table
@@ -92,15 +93,18 @@ const CommandsTable =
             {args: ['-lC', '--listOperators'], dataArgs: ['configurationFile'], exec: 'funcListContacts', help: "List all Operators in confgiration file."},
             {args: ['-eK', '--exportKeys'], dataArgs: ['fileOutput', 'configurationFile'], exec: 'funcExportKeys', help: "Export keys saved in configuration file."},
             {args: ['-pD', '--printDigitalAddress'], dataArgs: ['configurationFile'], exec: 'funcPrintDA', help: "Print Digital Address from configuration file."},
+            {args: ['-pN', '--printName'], dataArgs: ['configurationFile'], exec: 'funcPrintName', help: "Print Name from configuration file."},
 
-            //General Use Commands
+            //General Use Commands 
             {args: ['-uDns', '--updateDnsBinder'], dataArgs: [], exec: 'funcUpdateDns', help: "Downaload latest version of dns binder file."},
+            {args: ['-b', '--balance'], dataArgs: ['folderWithUnits', 'keyPair'], exec: 'funcBalance', help: "Calculate current balance of DICE in specified folder."},
+            {args: ['-lU', '--listUnits'], dataArgs: ['folderWithUnits', 'keyPair'], exec: 'funcListUnits', help: "List all units in specific folder with current value, owner and operator."},
             {args: ['-c', '--calculate'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
             {args: ['-v', '--validate'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
             {args: ['-k', '--keygen'], dataArgs: ['fileOutput'], exec: 'funcKeyGen', help: "Generate new KeyPair of Digital Address and Private Key"},
             {args: ['-to', '--tradeOwnerless'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
             {args: ['-tc', '--tradeCurrent'], dataArgs: ['diceUnit', 'fileOutput', 'addrMin', 'keyPair'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
-            {args: ['-tn', '--tradeNew'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
+            {args: ['-tn', '--tradeNew'], dataArgs: ['diceUnit', 'fileOutput', 'keyPair'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
             {args: ['-cc', '--calculateCuda'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
             {args: ['-r', '--register'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcRegister', help: "Send prototype to operator to register it in its DB."},
             {args: ['-ver', '--version'], dataArgs: [], exec: 'funcVersion', help: "Prints application current version"},
@@ -127,8 +131,10 @@ const keyExt = ".dkeys";
 const unitExt = ".dice";
 const unitEncExt = ".diceEnc";
 
+/* javascript-obfuscator:disable */
 //View Interfaces
 const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
+/* javascript-obfuscator:enable */
 
 //path to DNS binder
 const dnsFile = {path: './dns.json', type: 'json'};
@@ -156,4 +162,4 @@ module.exports.minerVersion = version;
 module.exports.minerSecurityLevels = securityLevels;
 module.exports.minerConfigFile = configFile;
 module.exports.minerHttpDns = httpsDns;
-module.exports.minerExtensions = {unit:unitExt,key:keyExt,conf:configExt,unitEnc: unitEncExt};
+module.exports.minerExtensions = {unit: unitExt, key: keyExt, conf: configExt, unitEnc: unitEncExt};
