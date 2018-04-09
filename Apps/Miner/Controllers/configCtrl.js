@@ -31,7 +31,7 @@ const modCfg = require('../../../models/ContactsWorker/ContactsWorker.js');
 const modCommandParser = require('../../../models/CommandParser/CommandParser.js');
 const modDigAddress = require('../../../models/AddressCalculator/DigitalAdressCalculator_ECDH.js');
 const modVIEW = require('../../../models/VIEW_Console/VIEW_Console.js');
-/* javascript-obfuscator:enable */
+
 
 //Init configration worker
 var cfgWorker = new modCfg();
@@ -41,6 +41,7 @@ var digAddrWorker = new modDigAddress();
 const exConfig = require('../config/minerConfig.js');
 var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerVIEW_IF.tablePorts, exConfig.minerViewOut);
 
+/* javascript-obfuscator:enable */
 //#############################################################################
 // Parsing of Commands
 //#############################################################################

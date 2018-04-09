@@ -27,6 +27,23 @@ call build.bat
 echo 8. Copy Obfusticate BUILD Applications
 cp -R ./BUILD ../
 
+echo 9. Prepare Delivery folder
+echo -Copy CUDA Application
+cp -R ../Apps/Miner/CUDA ../dist/Miner/
+
+echo -Copy new applications for Windows 64-bit OS
+cp ./BUILD/Miner_Build/Win/Miner.exe ../dist/Miner/
+cp ./BUILD/Operator_Build/Win/Operator.exe ../dist/Operator/
+
+echo -Copy full package of applications
+cp -R ./BUILD/Miner_Build ../dist/Miner/
+cp -R ./BUILD/Operator_Build ../dist/Operator/
+
+echo -Copy README 
+cp ../Apps/Readme.txt ../dist/
+cp ../Apps/Install_Operator.txt ../dist/
+
+
 echo #############################################
 echo ###                 READY                 ###
 echo #############################################

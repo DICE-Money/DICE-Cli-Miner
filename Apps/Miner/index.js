@@ -426,7 +426,7 @@ function funcTradeNew() {
                         if (!modFs.existsSync(appArgs.diceUnit)) {
                             saveDICEToFile(appArgs.diceUnit);
                         }
-                    }else{
+                    } else {
                         saveDICEToFile(appArgs.fileOutput);
                     }
                     currentState = exConfig.minerStates.eExit_FromApp;
@@ -592,11 +592,11 @@ function funcERROR() {
 var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
 
 //Execute function 
-//try {
-commandFunctions[funcName]();
-//} catch (e) {
-//    console.log(e);
-//}
+try {
+    commandFunctions[funcName]();
+} catch (e) {
+    //console.log(e);
+}
 
 //#############################################################################
 // Local Help function

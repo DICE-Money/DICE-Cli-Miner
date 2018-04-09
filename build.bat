@@ -64,4 +64,3 @@ cp ./BUILD/Miner_Build/Win/Miner.exe ./dist/Miner/
 cp ./BUILD/Operator_Build/Win/Operator.exe ./dist/Operator/
 
 echo Everything finished
-pause

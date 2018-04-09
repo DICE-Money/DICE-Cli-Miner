@@ -1,19 +1,26 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.45 Units Listing and Balance - 07.04.2018
+- Listing of Units from folder
+- Balance in folder
+- Security Update of binaries
+- Optimization of Listing and balance functions
+- Specify a folder as output after accepting new DICE unit
+
 Revision 1.42 File Extensions - 06.03.2018
--Update noted changes for file extensions and .dconf auto find in directory.
--Add general start points for delayed security level update (Not Finished).
--Re-factor Code(Nothing added).
--Add Google Drive Dynamic path finder.
--Remove DNS Binder. Add static configuration of operator.
--Update with new Messages and Errors
--Remove old  units, add Controllers and instance of Configuration controller. 
- New Commands to use contacts bank. New Bat file to use program. 
- Google Drive remote DNS binder file.
--Add remote downloading of dns binder file.
--Add initial revision of ContactWorker(Configuration Worker).
--Remove checking of arguments count
+- Update noted changes for file extensions and .dconf auto find in directory.
+- Add general start points for delayed security level update (Not Finished).
+- Re-factor Code(Nothing added).
+- Add Google Drive Dynamic path finder.
+- Remove DNS Binder. Add static configuration of operator.
+- Update with new Messages and Errors
+- Remove old  units, add Controllers and instance of Configuration controller. 
+  New Commands to use contacts bank. New Bat file to use program. 
+  Google Drive remote DNS binder file.
+- Add remote downloading of dns binder file.
+- Add initial revision of ContactWorker(Configuration Worker).
+- Remove checking of arguments count
 
 Revision 1.40 Miner configuration and address book - 03.03.2018
 -Added triple encryption levels: general=256, advanced=384, heavy=521
