@@ -39,25 +39,26 @@ const appStates = {
     eStep_CalculateDICE: 4,
     eStep_RequestValidation: 5,
     eStep_SendPrototype: 6,
-    eStep_SHAOfUnit: 7,
+    eStep_SendScrap: 7,
+    eStep_SHAOfUnit: 8,
 
     //Trading
-    eStep_CurrentOwnerTrade: 8,
-    eStep_NewOwnerTrade: 9,
-    eStep_CurrentReleaseOwnerlessToServer: 10,
+    eStep_CurrentOwnerTrade: 9,
+    eStep_NewOwnerTrade: 10,
+    eStep_CurrentReleaseOwnerlessToServer: 11,
 
-    eStep_CurrentOwnerClaimToServer: 11,
-    eStep_NewOwnerClaimToServer: 12,
-    eStep_CurrentReleaseOwnerless: 13,
+    eStep_CurrentOwnerClaimToServer: 12,
+    eStep_NewOwnerClaimToServer: 13,
+    eStep_CurrentReleaseOwnerless: 14,
 
     //Idle
-    eStep_IDLE: 14,
+    eStep_IDLE: 15,
 
     //DNS Downloading
-    eStep_DnsBinderWait: 15,
+    eStep_DnsBinderWait: 16,
 
-    eExit_FromApp: 16,
-    eStep_Count: 17
+    eExit_FromApp: 17,
+    eStep_Count: 18
 };
 
 //Data stored buffer from console arguments

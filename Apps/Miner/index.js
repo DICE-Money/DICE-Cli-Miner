@@ -47,6 +47,7 @@ const exConfig = require('./config/minerConfig.js');
 /* javascript-obfuscator:enable */
 //Create instances of the following models
 var DICE = new modDICEUnit();
+var DICEScrap = new modDICEUnit();
 var DICEProto = new modDICEPrototype();
 var DiceCalculatorL = new modDICECalculator("js");
 var DNS = new modDNSBinder();
@@ -64,6 +65,7 @@ var currentState = CommandParser.getState();
 var keyPair = {};
 var scheduler_10ms = undefined;
 var zeroes = undefined;
+var globalTh = undefined;
 var encryptor = undefined;
 var view_console = new modVIEW(exConfig.minerVIEW_IF.tableCodes, exConfig.minerVIEW_IF.tablePorts, exConfig.minerViewOut);
 view_console.setAllowed(exConfig.minerViewCfg);
@@ -71,6 +73,9 @@ var isCudaReq = false;
 var securityCounter = 0;
 var isTcpReady = false;
 var isDnsHttpRequested = false;
+
+//Object {get(),remove(fileName)}
+var diceScrapFuncHandlers = undefined;
 
 //Check Addresses
 var appArgs = JSON.parse(modControllers.checkConfig);
@@ -145,9 +150,17 @@ function funcCalculate() {
                         view_console.printCode("USER_INFO", "UsInf0051", appArgs.specificUnitValue);
                         zeroes = DICEValue.getZeroesFromN(appArgs.specificUnitValue, receivedData.N);
                     }
-
-                    calculateDICE(appArgs);
-                    currentState = exConfig.minerStates.eStep_RequestValidation;
+                    globalTh = receivedData.N;
+                    calculateDICE(appArgs, (diceScrapFuncHandlerL) => {
+                        currentState = exConfig.minerStates.eStep_SendScrap;
+                        diceScrapFuncHandlers = diceScrapFuncHandlerL;
+                        console.log("Scrap Dice");
+                    }, (dice) => {
+                        DICE = dice;
+                        currentState = exConfig.minerStates.eStep_RequestValidation;
+                        console.log("Normal Dice");
+                    });
+                    currentState = exConfig.minerStates.eStep_IDLE;
                 });
                 break;
 
@@ -175,6 +188,28 @@ function funcCalculate() {
                     currentState = exConfig.minerStates.eStep_SHAOfUnit;
                 });
                 break;
+
+            case exConfig.minerStates.eStep_SendScrap:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    //return Object {fileName,unit}
+                    DICEScrap = diceScrapFuncHandlers.get().unit;
+                    var encryptedData = encryptor.encryptDataPublicKey(DICEScrap.toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET DICEScrap", addr, encryptedData);
+                    console.log("Send", diceScrapFuncHandlers.get().fileName);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    console.log("Removed", diceScrapFuncHandlers.get().fileName);
+                    diceScrapFuncHandlers.remove(diceScrapFuncHandlers.get().fileName);
+                    currentState = exConfig.minerStates.eStep_IDLE;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_IDLE:
+                //Wait to finish generation of unit
+                break;
+
 
             case exConfig.minerStates.eStep_SHAOfUnit:
                 hashOfUnit();
@@ -673,7 +708,7 @@ function executeExchangeCertificate(nextState) {
 }
 
 //Function Generate DICE unit (Contains busy loop)
-function calculateDICE(Args) {
+function calculateDICE(Args, diceScrapCallback, finishCallback) {
     //Inform for generetion
     view_console.printCode("USER_INFO", "UsInf0056", zeroes);
     var elapsedTime = 0;
@@ -685,7 +720,7 @@ function calculateDICE(Args) {
 
     //Generating new DICE Unit  
     if (true === isCudaReq) {
-        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, exConfig.minerPathToCuda, `cudaJsUnit_${keyPair.digitalAddress}.json`);
+        DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, globalTh, exConfig.minerPathToCuda, `cudaJsUnit_${keyPair.digitalAddress}.json`, diceScrapCallback, finishCallback);
     } else {
         DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
     }

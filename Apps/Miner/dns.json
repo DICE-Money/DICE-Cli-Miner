@@ -13,5 +13,10 @@
 		"system":"Neo Pi Duo - Allwinner H2+ - 256MB RAM - 32GB ROM",
         "ip": "192.168.1.115",
         "port": "2014"
+	},
+	"76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718" : {
+		"system":"Neo Pi Duo - Allwinner H2+ - 256MB RAM - 32GB ROM",
+        "ip": "127.0.0.1",
+        "port": "1993"
 	}
 }
