@@ -1,6 +1,14 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.46 Scrapping - 08.05.2018
+-Add new view interface for Scrapping functionality.	
+-Add scrapping functionality on Operator side. Update operator configuration file template.	
+-Update proper mining time measurement and overwriting of existing units. 	
+-Add Scrapping on miner side.	
+-Add Scrap functionality. Use Async functions to handle scrapped dice units.
+-Update CUDA Application to save "scrapped" dice units. 	
+
 Revision 1.45 Units Listing and Balance - 07.04.2018
 - Listing of Units from folder
 - Balance in folder
@@ -105,49 +113,6 @@ Revision 1.0 Initial - 06.12.2017
 - DNS binder for translation of Digital Address to Ip Port communication to Server 
 - Standalone applications for Server and Miner
 
-##############################################################################################################################################
-# How to Use
-##############################################################################################################################################
-1. Example use of Miner Application 
-	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
-	Miner.exe -cc miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJ
-
-	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator>
-	Miner.exe -c miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJG
-	
-	-Aplication-  -<command> <keyPair filename> <output file for Unit> <address Of Operator> <DICE Value>
-	Miner.exe -c miner.json unit.txt 3SEdktQGS4K947PUadvbHFD2oJG 2
-	
-	-Aplication-  -<command> <dice Unit in Base 58>
-	Miner.exe -v unit.txt
-	
-	-Aplication-  -<command> <keyPair filename>
-	Miner.exe -k keyPair.json
-	
-	-Aplication-  -<command> <keyPair filename> <Dice Unit file> <output file for Encrypted Unit> <address Of New Owner> <address Of Operator>
-	Miner.exe -tc miner.json ./out/unitTest.txt ./out/unitEncToM2.txt 2dnzkaaKeeCeUAXTy2DrxijSKGB 3SEdktQGS4K947PUadvbHFD2oJG
-	
-	-Aplication-  -<command> <keyPair filename> <Dice Unit file> <output file for Encrypted Unit> <address Of New Owner> <address Of Operator>
-	Miner.exe -to miner.json ./out/unitTest.txt 3SEdktQGS4K947PUadvbHFD2oJG
-	
-	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
-	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
-
-	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
-	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
-
-2. Example use of Server Application 
-	-Aplication-  -<keyPair filename> <valid zeros> <k> <N>
-	Server.exe operator.json 15 1 25
-
-	-Aplication-  -config <configFile>
-	Server.exe -config serverConfig.json
-
-	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
-	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
-
-	-Aplication-  -<command> <keyPair filename> <Encrypted Dice Unit file> <address Of Operator>
-	Miner.exe -tn miner2.json ./out/unitEncToM2.txt 3SEdktQGS4K947PUadvbHFD2oJG
 ##############################################################################################################################################
 # EOF
 ##############################################################################################################################################

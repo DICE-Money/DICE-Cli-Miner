@@ -1,6 +1,6 @@
-##############################################################################################################################################
-# HOW TO PREPARE ENVIRONMENT 
-##############################################################################################################################################
+#######################################################################
+# GENERAL INSTALLATION STEPS FOR TEST AND DEBUG
+#######################################################################
 
 1. Install MySQL with PhpMyAdmin DB Access
 	ex. WAMP for Windows or LAMP for Linux 
@@ -11,3 +11,46 @@
 	proper host, user and password
 
 4. Execute Operator appalication
+
+#######################################################################
+# GENERAL INSTALLATION STEPS FOR GENERAL USE ON LINUX
+#######################################################################
+
+!!! BEFORE INSTALLATION, CREATE NEW PAIR OF KEYS BY USING MINER APPLICATION !!!
+
+0. Copy Pair of keys to ./Operator/Linux_Install/DICE/Operator
+
+1. Copy folder ./Operator/Linux_Install/DICE/ in
+   target system /home/DICE/
+   
+2. Copy Operator application from folder 
+   ./Operator/Operator_Build/Linux/Operator (or Operator_x86) 
+   or 
+   ./Operator/Operator_Build/Linux_arm/Operator (or Operator_x86)
+   to 
+   /home/DICE/Operator/Operator (on target the application must be called Operator)
+   
+3. Go to /home/DICE/Linux_config/ folder (on target system) and
+   change mode of file Install.sh (eg. sudo chmod 555 Install.sh)
+
+4. Execute Install.sh as super user (eg. sudo ./Install.sh) 
+   and follow instructions (if your system use MariaDB just enter suggested 
+   commands to create general account)
+
+5. Create new user in DB and grant permisions to create Tables
+
+6. Go to /home/DICE/Operator/ and change configuration in "operatorConfig.json"
+ -  Set up user and password of DB
+ -  Set up IP and Port
+ -  Specify path to keys
+ 
+7. Restart Service (eg. sudo service dice_operator stop &
+                        sudo service dice_operator start)
+						
+8. Check in system monitor is there any process started with name "Operator -cf ...."
+
+9. Check for new DB in PhpMyAdmin called "DICE" and also for new table "operator_<Digital address>"				
+
+10. After successfull installation add Digital Address, IP and Port 
+    to dns.json in Miner application (only for local use)		
+						
