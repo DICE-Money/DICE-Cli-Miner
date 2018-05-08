@@ -154,11 +154,13 @@ function funcCalculate() {
                     calculateDICE(appArgs, (diceScrapFuncHandlerL) => {
                         currentState = exConfig.minerStates.eStep_SendScrap;
                         diceScrapFuncHandlers = diceScrapFuncHandlerL;
-                        console.log("Scrap Dice");
                     }, (dice) => {
                         DICE = dice;
-                        currentState = exConfig.minerStates.eStep_RequestValidation;
-                        console.log("Normal Dice");
+                        currentState = exConfig.minerStates.eStep_RequestValidation;                       
+                        //Stop measuring
+                        elapsedTime = Date.now() - Time;
+                        view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
+
                     });
                     currentState = exConfig.minerStates.eStep_IDLE;
                 });
@@ -196,11 +198,9 @@ function funcCalculate() {
                     DICEScrap = diceScrapFuncHandlers.get().unit;
                     var encryptedData = encryptor.encryptDataPublicKey(DICEScrap.toBS58(), Buffer.from(Bs58.decode(appArgs.addrOp)));
                     TCPClient.Request("SET DICEScrap", addr, encryptedData);
-                    console.log("Send", diceScrapFuncHandlers.get().fileName);
                 },
                         (response) => {
                     printServerReturnData(response);
-                    console.log("Removed", diceScrapFuncHandlers.get().fileName);
                     diceScrapFuncHandlers.remove(diceScrapFuncHandlers.get().fileName);
                     currentState = exConfig.minerStates.eStep_IDLE;
                 });
@@ -724,10 +724,6 @@ function calculateDICE(Args, diceScrapCallback, finishCallback) {
     } else {
         DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
     }
-    //Stop measuring
-    elapsedTime = Date.now() - Time;
-
-    view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
 }
 
 //Save to File 
@@ -735,7 +731,7 @@ function saveDICEToFile(fileOutput) {
     var fileIncrementor = 0;
     var testFile = fileOutput;
 
-    while (modFs.existsSync(testFile)) {
+    while (modFs.existsSync(testFile + exConfig.minerExtensions.unit)) {
         testFile = fileOutput + "." + fileIncrementor;
         fileIncrementor++;
     }

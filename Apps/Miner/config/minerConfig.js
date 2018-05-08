@@ -27,7 +27,7 @@
 //Application version
 const version =
         "Copyright (c) 2018, Mihail Maldzhanski <pollarize@gmail.com>\n\
-DICE Money <www.dice.money> - Miner Application Version[1.45] - 07 .04.2018";
+DICE Money <www.dice.money> - Miner Application Version[1.46] - 08.05.2018";
 
 //Application states
 const appStates = {
