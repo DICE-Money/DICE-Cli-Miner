@@ -84,10 +84,10 @@ if (appArgs.configrationFile === undefined ||
 cfgWorker = new modCfg(appArgs.configurationFile);
 
 //Execute function 
-try {
+if (commandFunctions.hasOwnProperty(funcName) === true) {
     commandFunctions[funcName]();
-} catch (e) {
-    //Must to be done ???
+} else {
+    //Nothing
 }
 
 //#############################################################################

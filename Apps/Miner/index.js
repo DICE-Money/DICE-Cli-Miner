@@ -84,6 +84,7 @@ var appArgs = JSON.parse(modControllers.checkConfig);
 //modControllers.setArgs(appArgs);
 
 const commandFunctions = {
+    'funcListGlobalOperators': funcListGlobalOperators,
     'funcBalance': funcBalance,
     'funcListUnits': funcListUnits,
     "funcUpdateDns": funcUpdateDns,
@@ -156,7 +157,7 @@ function funcCalculate() {
                         diceScrapFuncHandlers = diceScrapFuncHandlerL;
                     }, (dice) => {
                         DICE = dice;
-                        currentState = exConfig.minerStates.eStep_RequestValidation;                       
+                        currentState = exConfig.minerStates.eStep_RequestValidation;
                         //Stop measuring
                         elapsedTime = Date.now() - Time;
                         view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
@@ -557,6 +558,16 @@ function funcRegister() {
     }
 }
 
+function funcListGlobalOperators() {
+    var dnsData = modFs.readFileSync(exConfig.minerDnsFile.path, "utf8");
+    var dnsObject = JSON.parse(dnsData);
+    var counter = 0;
+    for (var operator in dnsObject) {
+        view_console.print(`${++counter}. ${operator} - ${dnsObject[operator].system}`);
+    }
+    funcExit();
+}
+
 function funcUpdateDns() {
     //Delete file
     modFs.unlink(exConfig.minerDnsFile.path, () => {
@@ -627,10 +638,10 @@ function funcERROR() {
 var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
 
 //Execute function 
-try {
+if (commandFunctions.hasOwnProperty(funcName) === true) {
     commandFunctions[funcName]();
-} catch (e) {
-    //console.log(e);
+} else{
+    // Nothing
 }
 
 //#############################################################################
@@ -762,7 +773,7 @@ function dnsInitialization(callback) {
         isTcpReady = true;
     } else {
         if (!isDnsHttpRequested) {
-            DNS.getGoogleDriveData(exConfig.minerHttpDns, () => {
+            DNS.getGoogleDriveData(Buffer.from(exConfig.minerHttpDns, "base64").toString(), () => {
                 isTcpReady = true;
                 if (callback !== undefined) {
                     callback();
