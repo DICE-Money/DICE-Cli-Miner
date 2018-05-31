@@ -1,6 +1,16 @@
 ##############################################################################################################################################
 # General Revision History
 ##############################################################################################################################################
+Revision 1.48 Global Threshold and UNIT testing - 30.05.2018
+ -Add prevention of Error handling.	
+ -Add "Error" event handling.	
+ -Add CloudRequester to get Global threshold from remote server and also automatic check on each 2 minutes.	
+ -Add UNIT Test environment and better management of executed commands. 	
+ -Change getting of dns.json from cloud to happen through CloudRequester.	
+ -Add CloudRequester to get data from CLOUD.	
+ -Add configuration parameter for exact number CPU to be used by the application.	
+ -Pipe stdout from CUDA application to Node application console output.	
+
 Revision 1.46 Scrapping - 08.05.2018
 -Add new view interface for Scrapping functionality.	
 -Add scrapping functionality on Operator side. Update operator configuration file template.	

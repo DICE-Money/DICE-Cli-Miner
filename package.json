@@ -1,6 +1,6 @@
 {
   "name": "EncryptionNodeJS",
-  "version": "1.2.0",
+  "version": "1.4.6",
   "keywords": [
     "util",
     "functional",
@@ -16,15 +16,18 @@
     "elliptic": "^6.4.0",
     "js-sha3": "^0.6.1",
     "key-encoder": "^1.1.6",
+    "mocha": "^5.1.1",
     "mysql": "^2.15.0",
     "node-lzw": "^0.3.1",
     "sync-mysql": "^3.0.1"
   },
   "scripts": {
-    "start": "node Apps/Miner/execute.bat"
+    "start": "node Apps/Miner/index.js -h",
+    "test": "mocha"
   },
   "devDependencies": {
     "javascript-obfuscator": "^0.14.3",
+    "mochawesome": "^3.0.2",
     "tui-jsdoc-template": "^1.2.2"
   }
 }

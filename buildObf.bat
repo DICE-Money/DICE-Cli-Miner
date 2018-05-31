@@ -9,7 +9,7 @@ call javascript-obfuscator ./Apps --output ./obf --compact "true" --controlFlowF
 echo 2. Obfusticate Models
 call javascript-obfuscator ./models --output ./obf --compact "true" --controlFlowFlattening "true" --controlFlowFlatteningThreshold "1" --deadCodeInjection "true" --deadCodeInjectionThreshold "1" --debugProtection "true" --debugProtectionInterval "true" --disableConsoleOutput "true" --identifierNamesGenerator "hexadecimal" --log "false" --renameGlobals "false" --rotateStringArray "true" --selfDefending "true" --stringArray "true" --stringArrayEncoding "rc4" --stringArrayThreshold "1" --transformObjectKeys "true" --unicodeEscapeSequence "false"
 
-echo 3. Copy nodeJS modules
+echo 3. Copy nodeJS modules 
 cp -R ./node_modules ./obf
 
 echo 4. Copy BUILD folder

@@ -33,8 +33,8 @@ const minerConfig = require('../../config/minerConfig.js');
 const commands = minerConfig.minerCommandTable;
 //General Test vars
 const node = "node";
-const minerApp = "../../index.js";
-const operatorApp = "../../../Operator/index.js";
+const minerApp = "../../../../dist/Miner/Miner.exe";
+const operatorApp =  "../../../../dist/Operator/Operator.exe";
 
 //Default timer for executions of test is 2 minutes
 const maxTimeOut = 2 * 60 * 1000;
@@ -178,8 +178,8 @@ describe('General functional tests', function () {
     });
 
     it('Check is operator Valid', function () {
-        var operatorExecutor = child_process.spawnSync(node, [operatorApp, "-ver"], {stdio: ['pipe', 'pipe', 'pipe']});
-        var data = operatorExecutor.stdout.toString();
+        var operatorExecutor = child_process.execFileSync(operatorApp,["-ver"], {stdio: ['pipe', 'pipe', 'pipe']});
+        var data = operatorExecutor.toString();
 
         if (data.length === 0) {
             throw new Error("Operator application is not valid");
@@ -193,8 +193,8 @@ describe('General functional tests', function () {
             //Set user defined timeout
             this.timeout(maxTimeOut);
             //Exec node
-            var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe']});
-            var data = minerAppExecVersion.stdout.toString();
+            var minerAppExecVersion = child_process.execFileSync(minerApp, [ ...test.args], {stdio: ['pipe', 'pipe', 'pipe'],cwd:"./"});
+            var data = minerAppExecVersion.toString();
 
             //Add return data from execution
             addContext(this, {title: "Execution report", value: data});
