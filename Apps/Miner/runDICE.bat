@@ -5,6 +5,9 @@ set application=Miner.exe
 set application=node index.js
 )
 
+echo Updating DNS Binder file...
+%application% -uDns
+
 rem Print Version of the Tool
 %application% -ver
 
@@ -55,8 +58,9 @@ echo    (3) to validate DICE
 echo    (4) to mine new DICE
 echo    (5) to export my encryption keys
 echo    (6) to update operators list
+echo    (7) to list all global operators
 echo.
-set /p choice="Select from [1..6] "
+set /p choice="Select from [1..7] "
 
 if "%choice%"=="1" (
 goto:sendDice
@@ -70,6 +74,8 @@ goto:mineNewDice
 goto:exportKeys
 ) else if "%choice%"=="6" (
 goto:updateDns
+) else if "%choice%"=="7" (
+goto:listGlobalOperators
 ) else (
     echo "Invalid Choice. Try Again" 
 )
@@ -175,6 +181,11 @@ goto:choosing
 :updateDns
 echo Updating DNS Binder file...
 %application% -uDns
+goto:choosing
+
+:listGlobalOperators
+echo Listing all global operators...
+%application% -lGO
 goto:choosing
 
 pause
