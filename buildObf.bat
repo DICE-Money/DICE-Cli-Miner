@@ -10,13 +10,14 @@ echo 2. Obfusticate Models
 call javascript-obfuscator ./models --output ./obf --compact "true" --controlFlowFlattening "true" --controlFlowFlatteningThreshold "1" --deadCodeInjection "true" --deadCodeInjectionThreshold "1" --debugProtection "true" --debugProtectionInterval "true" --disableConsoleOutput "true" --identifierNamesGenerator "hexadecimal" --log "false" --renameGlobals "false" --rotateStringArray "true" --selfDefending "true" --stringArray "true" --stringArrayEncoding "rc4" --stringArrayThreshold "1" --transformObjectKeys "true" --unicodeEscapeSequence "false"
 
 echo 3. Copy nodeJS modules 
-cp -R ./node_modules ./obf
+rsync -tr --ignore-errors ./node_modules ./obf/
 
 echo 4. Copy BUILD folder
-cp -R ./BUILD ./obf
+echo # X # - DISABLED
+rem rsync -tr ./BUILD ./obf
 
 echo 5. Copy build script
-cp ./build.bat ./obf
+rsync ./build.bat ./obf
 
 echo 6. Go to ./obf folder
 cd ./obf
@@ -24,10 +25,26 @@ cd ./obf
 echo 7. Build Applications
 call build.bat
 
-echo 8. Copy Obfusticate BUILD Applications
+echo 6. Go to Unit test folder
+cd ../Apps/Miner/test/functional-test/
+
+echo 7. Execute Unit test reporter
+call mocha generalTestBinary.js --reporter mochawesome
+call /mochawesome-report/mochawesome.html
+
+echo 8. Go to Main directory
+cd ../../../../
+
+echo 9. Execute Remote builder for ARM targets
+call buildSftp.bat
+
+echo 10. Go to ./obf folder
+cd ./obf
+
+echo 11. Copy Obfusticate BUILD Applications
 cp -R ./BUILD ../
 
-echo 9. Prepare Delivery folder
+echo 12. Prepare Delivery folder
 echo -Copy CUDA Application
 cp -R ../Apps/Miner/CUDA ../dist/Miner/
 
@@ -43,6 +60,18 @@ echo -Copy README
 cp ../Apps/Readme.txt ../dist/
 cp ../Apps/Install_Operator.txt ../dist/
 
+echo 13. Go to ./ folder
+cd ./
+
+echo 14. Execute Archiving of Deliveries
+call build7z.bat
+
+echo 15. Execute Moving of Deliveries
+call buildDistribute.bat
+
+echo 16. Remove Deliveries from current folder
+rm Delivery*.7z 
+rm EncryptionNodeJS*.7z 
 
 echo #############################################
 echo ###                 READY                 ###
