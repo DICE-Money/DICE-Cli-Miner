@@ -3,14 +3,11 @@ echo #############################################
 echo ###       BUILD SECURE APPLICATIONS       ###
 echo #############################################
 
-echo 1. Obfusticate Applications
-call javascript-obfuscator ./Apps --output ./obf --compact "true" --controlFlowFlattening "true" --controlFlowFlatteningThreshold "1" --deadCodeInjection "true" --deadCodeInjectionThreshold "1" --debugProtection "true" --debugProtectionInterval "true" --disableConsoleOutput "true" --identifierNamesGenerator "hexadecimal" --log "false" --renameGlobals "false" --rotateStringArray "true" --selfDefending "true" --stringArray "true" --stringArrayEncoding "rc4" --stringArrayThreshold "1" --transformObjectKeys "true" --unicodeEscapeSequence "false"
+echo Steps 1..2..3
 
-echo 2. Obfusticate Models
-call javascript-obfuscator ./models --output ./obf --compact "true" --controlFlowFlattening "true" --controlFlowFlatteningThreshold "1" --deadCodeInjection "true" --deadCodeInjectionThreshold "1" --debugProtection "true" --debugProtectionInterval "true" --disableConsoleOutput "true" --identifierNamesGenerator "hexadecimal" --log "false" --renameGlobals "false" --rotateStringArray "true" --selfDefending "true" --stringArray "true" --stringArrayEncoding "rc4" --stringArrayThreshold "1" --transformObjectKeys "true" --unicodeEscapeSequence "false"
-
-echo 3. Copy nodeJS modules 
-rsync -tr --ignore-errors ./node_modules ./obf/
+cd ./build-setup/
+call buildObf.bat
+cd ../
 
 echo 4. Copy BUILD folder
 echo # X # - DISABLED
@@ -60,8 +57,8 @@ echo -Copy README
 cp ../Apps/Readme.txt ../dist/
 cp ../Apps/Install_Operator.txt ../dist/
 
-echo 13. Go to ./ folder
-cd ./
+echo 13. Go to ../ folder
+cd ../
 
 echo 14. Execute Archiving of Deliveries
 call build7z.bat
