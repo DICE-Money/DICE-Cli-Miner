@@ -26,7 +26,7 @@
 
 //Application version
 const version =
-"DICE Money <www.dice.money> - Miner Application Version[1.49] - 04.06.2018 \n\
+"DICE Money <www.dice.money> - Miner Application Version[1.49 Patch 2] - 18.06.2018 \n\
 Written by Mihail Maldzhanski <pollarize@gmail.com>";
 
 //Application states
@@ -135,7 +135,7 @@ const unitEncExt = ".diceEnc";
 
 /* javascript-obfuscator:disable */
 //View Interfaces
-const confAppViewIF = require('../../VIEW/VIEW_Interfaces.js');
+const confAppViewIF = require('../../../VIEW/VIEW_Interfaces.js');
 /* javascript-obfuscator:enable */
 
 //path to DNS binder

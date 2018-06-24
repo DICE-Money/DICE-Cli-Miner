@@ -163,7 +163,11 @@ function funcCalculate() {
                         view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
 
                     });
-                    currentState = exConfig.minerStates.eStep_IDLE;
+                    
+                    //Scrapping is not supported for SW DICE unit generation
+                    if (isCudaReq === true) {
+                        currentState = exConfig.minerStates.eStep_IDLE;
+                    }
                 });
                 break;
 
@@ -640,7 +644,7 @@ var funcName = CommandParser.getExecFuncByTable(exConfig.minerCommandTable);
 //Execute function 
 if (commandFunctions.hasOwnProperty(funcName) === true) {
     commandFunctions[funcName]();
-} else{
+} else {
     // Nothing
 }
 
@@ -734,6 +738,7 @@ function calculateDICE(Args, diceScrapCallback, finishCallback) {
         DICE = DiceCalculatorL.getValidDICE_CUDA(addrOpL, addrMinL, zeroes, globalTh, exConfig.minerPathToCuda, `cudaJsUnit_${keyPair.digitalAddress}.json`, diceScrapCallback, finishCallback);
     } else {
         DICE = DiceCalculatorL.getValidDICE(Args.addrOp, keyPair.digitalAddress, zeroes);
+        finishCallback(DICE);
     }
 }
 
@@ -798,8 +803,8 @@ function continueInitconnection() {
 
     try {
         //Create connection
-        TCPClient.create("client", serverData.ip, serverData.port, () => {
-            view_console.printCode("ERROR", "Err0001");
+        TCPClient.create("client", serverData.ip, serverData.port, (error) => {
+            view_console.printCode("ERROR", "Err0001", error);
             currentState = exConfig.minerStates.eExit_FromApp;
         }, view_console);
     } catch (e) {
