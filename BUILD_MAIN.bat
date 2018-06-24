@@ -3,11 +3,16 @@ echo #############################################
 echo ###       BUILD SECURE APPLICATIONS       ###
 echo #############################################
 
-echo Steps 1..2..3
+echo 1. Obfusticate Applications
+call javascript-obfuscator ./Apps --output ./obf --compact true --controlFlowFlattening true --controlFlowFlatteningThreshold 1 --deadCodeInjection true --deadCodeInjectionThreshold 1 --debugProtection true --debugProtectionInterval true --disableConsoleOutput true --identifierNamesGenerator hexadecimal --log false --renameGlobals false --rotateStringArray true --selfDefending true --stringArray true --stringArrayEncoding rc4 --stringArrayThreshold 1 --transformObjectKeys true --unicodeEscapeSequence false
 
-cd ./build-setup/
-call buildObf.bat
-cd ../
+echo 2. Obfusticate Models
+call javascript-obfuscator ./models --output ./obf --compact true --controlFlowFlattening true --controlFlowFlatteningThreshold 1 --deadCodeInjection true --deadCodeInjectionThreshold 1 --debugProtection true --debugProtectionInterval true --disableConsoleOutput true --identifierNamesGenerator hexadecimal --log false --renameGlobals false --rotateStringArray true --selfDefending true --stringArray true --stringArrayEncoding rc4 --stringArrayThreshold 1 --transformObjectKeys true --unicodeEscapeSequence false
+call javascript-obfuscator ./view --output ./obf --compact true --controlFlowFlattening true --controlFlowFlatteningThreshold 1 --deadCodeInjection true --deadCodeInjectionThreshold 1 --debugProtection true --debugProtectionInterval true --disableConsoleOutput true --identifierNamesGenerator hexadecimal --log false --renameGlobals false --rotateStringArray true --selfDefending true --stringArray true --stringArrayEncoding rc4 --stringArrayThreshold 1 --transformObjectKeys true --unicodeEscapeSequence false
+
+echo 3. Copy nodeJS modules and view
+rsync -tr --ignore-errors ./node_modules ./obf/
+rsync -tr --ignore-errors ./3rd-modified ./obf/
 
 echo 4. Copy BUILD folder
 echo # X # - DISABLED
@@ -33,7 +38,9 @@ echo 8. Go to Main directory
 cd ../../../../
 
 echo 9. Execute Remote builder for ARM targets
+cd ./build-setup
 call buildSftp.bat
+cd ../
 
 echo 10. Go to ./obf folder
 cd ./obf
@@ -61,10 +68,12 @@ echo 13. Go to ../ folder
 cd ../
 
 echo 14. Execute Archiving of Deliveries
-call build7z.bat
+call ./build-setup/build7z.bat
 
 echo 15. Execute Moving of Deliveries
+cd ./build-setup
 call buildDistribute.bat
+cd ../
 
 echo 16. Remove Deliveries from current folder
 rm Delivery*.7z 
