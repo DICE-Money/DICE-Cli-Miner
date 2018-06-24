@@ -6,3 +6,7 @@
 /BUILD/
 /dist/
 /obf/
+/Apps/Miner/dns.json
+*.dkeys
+*.dconf
+*.dice
