@@ -101,7 +101,7 @@ const CommandsTable =
             {args: ['-uDns', '--updateDnsBinder'], dataArgs: [], exec: 'funcUpdateDns', help: "Downaload latest version of dns binder file."},
             {args: ['-b', '--balance'], dataArgs: ['folderWithUnits', 'keyPair'], exec: 'funcBalance', help: "Calculate current balance of DICE in specified folder."},
             {args: ['-lU', '--listUnits'], dataArgs: ['folderWithUnits', 'keyPair'], exec: 'funcListUnits', help: "List all units in specific folder with current value, owner and operator."},
-            /*Depreacetd*/      //{args: ['-c', '--calculate'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
+            {args: ['-c', '--calculate'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculate', help: "Calculate new DICE Unit by using CPU and JS based SHA3 Library"},
             {args: ['-v', '--validate'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
             {args: ['-k', '--keygen'], dataArgs: ['fileOutput'], exec: 'funcKeyGen', help: "Generate new KeyPair of Digital Address and Private Key"},
             {args: ['-to', '--tradeOwnerless'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
@@ -135,7 +135,7 @@ const unitEncExt = ".diceEnc";
 
 /* javascript-obfuscator:disable */
 //View Interfaces
-const confAppViewIF = require('../../../VIEW/VIEW_Interfaces.js');
+const confAppViewIF = require('../../../view/VIEW_Interfaces.js');
 /* javascript-obfuscator:enable */
 
 //path to DNS binder
