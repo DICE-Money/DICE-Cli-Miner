@@ -33,8 +33,8 @@ const minerConfig = require('../../config/minerConfig.js');
 const commands = minerConfig.minerCommandTable;
 //General Test vars
 const node = "node";
-const minerApp = "../../../../dist/Miner/Miner.exe";
-const operatorApp =  "../../../../dist/Operator/Operator.exe";
+const minerApp = "../../../../obf/BUILD/Miner_Build/Win/Miner.exe";
+const operatorApp =  "../../../../obf/BUILD/Operator_Build/Win/Operator.exe";
 
 //Default timer for executions of test is 2 minutes
 const maxTimeOut = 2 * 60 * 1000;
