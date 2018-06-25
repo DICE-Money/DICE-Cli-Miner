@@ -12,3 +12,4 @@
 *.dice
 node_modules/  
 obf/ 
+./Apps/Server/ 
