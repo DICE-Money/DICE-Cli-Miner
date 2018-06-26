@@ -1,191 +1,137 @@
 @echo off
-if exist Miner.exe (
-set application=Miner.exe
-) else (
-set application=node index.js
-)
+call checkSys.bat
+echo.
 
-echo Updating DNS Binder file...
+rem change the %cpar% value to -c if not using nVidia GPU (mining will be VERY SLOW)
+set cpar=-cc
+
+set units=./units
+set inbox=./inbox
+set outbox=./outbox
+set application=Miner.exe
+
+echo updating DNS binder file...
 %application% -uDns
 
 rem Print Version of the Tool
 %application% -ver
 
 if exist ./*.dconf (
-   rem file exists
+	rem file exists
 ) else (
-echo Creating configration file
-set /p cfgName="What is your name(optional)? "
-set cfgKeys=./keys
+	echo.
+	echo creating configration file
+	set cfgName=./config
+	set cfgKeys=./keys
 )
 
 rem Create Configuration
 if exist ./*.dconf (
- rem file exists
+	rem file exists
 ) else (
-echo Created new keys
-%application% -k "%cfgKeys%"
-echo.
-echo #######################################
-echo # DO NOT GIVE TO ANYONE YOUR KEYS !!! #
-echo # YOUR KEYS CAN NOT BE RECOVERED  !!! #
-echo #######################################
-echo.
-echo Created new configuration
-%application% -cCfg "%cfgName%" "%cfgKeys%".dkeys
-echo.
-echo Import initial address book
-%application% -iCfg ./contactsInit.dbook
-echo.
-echo List of contacts in address book
-%application% -lC
-echo.
-echo List of operators in address book
-%application% -lO
-echo.
+	echo new keys created
+	%application% -k "%cfgKeys%"
+	echo.
+	echo #######################################
+	echo # DO NOT GIVE YOUR KEYS TO ANYONE !!! #
+	echo # YOUR KEYS CAN NOT BE RECOVERED  !!! #
+	echo #######################################
+	echo.
+	echo new configuration created
+	%application% -cCfg "%cfgName%".dconf "%cfgKeys%".dkeys
+	echo.
 )
 
-:choosing
+:menu
 echo.
 echo ###########################################################
-echo Current Digital Address                
+echo personal digital address  ((* this is your own address! *))
 %application% -pD
 echo.
-echo What do you want to do ?  
-echo    (1) to send or release DICE that I own
-echo    (2) to claim ownership over DICE
-echo    (3) to validate DICE
-echo    (4) to mine new DICE
-echo    (5) to export my encryption keys
-echo    (6) to update operators list
-echo    (7) to list all global operators
+echo what do you want to do?  
+echo   (1) list operators
+echo   (2) list units
+echo   (3) validate
+echo   (4) mine new (continuously)
+echo   (5) send or release
+echo   (6) claim ownership
 echo.
-set /p choice="Select from [1..7] "
+set /p choice="your choice [1..6]: "
 
 if "%choice%"=="1" (
-goto:sendDice
+	goto:listOperators
 ) else if "%choice%"=="2" (
-goto:claimOwnership
+	goto:listUnits
 ) else if "%choice%"=="3" (
-goto:validateDice
+	goto:validateDice
 ) else if "%choice%"=="4" (
-goto:mineNewDice
+	goto:mineNew
 ) else if "%choice%"=="5" (
-goto:exportKeys
+	goto:sendRelease
 ) else if "%choice%"=="6" (
-goto:updateDns
-) else if "%choice%"=="7" (
-goto:listGlobalOperators
+	goto:claimOwnership
 ) else (
-    echo "Invalid Choice. Try Again" 
+	echo "invalid choice" 
 )
 
-goto:choosing
+goto:menu
 	
 :diceVal
 %application% -cc ./examples/miner.json ./out/unitTest.txt 3S4pihKB27NVrhCbH5PTugbiwo6 %value%
-goto:choosing
-
-:sendDice
-set /p dice="Choose DICE " 
-echo Who is the new owner?
-set /p newOwner="Enter valid digital address or enter "FREE" for ownerless " 
-
-if "%newOwner%"=="FREE" (
-rem nothing
-) else (
-set /p storeFile="Where to store the encrypted file? " 
-)
-
-if "%newOwner%"=="FREE" (
-%application% -to %dice% 
-) else (
-%application% -tc %dice% %storeFile% %newOwner%
-)
-goto:choosing
-
-:claimOwnership
-set /p dice="Choose Encrypted DICE "
-rem set /p storeFile="Where to store the DICE?"
-%application% -tn %dice%
-goto:choosing
-
-:validateDice
-set /p dice="Choose DICE to validate "
-%application% -v %dice%
-goto:choosing
-
-:mineNewDice
-set /p operatorAddr="What is the operator DICE address? "
-set /p storeFile="Where to store the DICE Unit file? " 
-
-:mineNewDiceChooseUnit
-set /p minimumValue="What minimum unit value to mine? (-10...10) "
-if "%minimumValue%"=="-10" (
-set value="1/1024"
-) else if "%minimumValue%"=="-9" (
-set value="2/1024"
-) else if "%minimumValue%"=="-8" (
-set value="4/1024"
-) else if "%minimumValue%"=="-7" (
-set value="8/1024"
-) else if "%minimumValue%"=="-6" (
-set value="16/1024"
-) else if "%minimumValue%"=="-5" (
-set value="32/1024"
-) else if "%minimumValue%"=="-4" (
-set value="64/1024"
-) else if "%minimumValue%"=="-3" (
-set value="128/1024"
-) else if "%minimumValue%"=="-2" (
-set value="256/1024"
-) else if "%minimumValue%"=="-1" (
-set value="512/1024"
-) else if "%minimumValue%"=="0" (
-set value="1"
-) else if "%minimumValue%"=="1" (
-set value="2"
-) else if "%minimumValue%"=="2" (
-set value="4"
-) else if "%minimumValue%"=="3" ( 
-set value="8"
-) else if "%minimumValue%"=="4" (
-set value="16"
-) else if "%minimumValue%"=="5" (
-set value="32"
-) else if "%minimumValue%"=="6" (
-set value="64"
-) else if "%minimumValue%"=="7" (
-set value="128"
-) else if "%minimumValue%"=="8" (
-set value="256"
-) else if "%minimumValue%"=="9" (
-set value="512"
-) else if "%minimumValue%"=="10" (
-set value="1024"
-) else (
-set noValue="true"
-)
-if "%noValue%"=="true" ( 
-%application% -cc %storeFile% %operatorAddr%
-) else (
-%application% -cc %storeFile% %operatorAddr% %value%
-)
-goto:choosing
-
-:exportKeys
-set /p storeFile="Where to save keys? "
-%application% -eK %storeFile%
-goto:choosing
+goto:menu
 
 :updateDns
-echo Updating DNS Binder file...
+echo updating DNS binder file...
 %application% -uDns
-goto:choosing
+goto:menu
 
-:listGlobalOperators
-echo Listing all global operators...
+:listOperators
+echo listing all known operators...
 %application% -lGO
-goto:choosing
+goto:menu
+
+:exportKeys
+set /p storeFile="full path for the keys file: "
+%application% -eK %storeFile%
+goto:menu
+
+:validateDice
+set /p dice="full path to DICE file: "
+%application% -v %dice%
+goto:menu
+
+:claimOwnership
+set /p dice="%inbox%/ encrypted or ownerless DICE file name: "
+set /p diceNew="%units%/ name (only) for the claimed DICE: "
+%application% -tn %inbox%/%dice% %units%/%diceNew%
+goto:menu
+
+:listUnits
+if exist %units%/*.dice (
+	%application% -lU %units%
+) else (
+	echo no DICE units in %units%/
+)
+goto:menu
+
+:sendRelease
+set /p dice="%units%/ DICE file name: "
+set /p newOwner="new owner address or "FREE" for ownerless: "
+
+if "%newOwner%"=="FREE" (
+	%application% -to %units%/%dice%
+) else (
+	%application% -tc %units%/%dice% %outbox%/%dice% %newOwner%
+	echo.
+	echo ######### file to send to the new owner: %outbox%/%dice%.diceEnc
+)
+goto:menu
+
+:mineNew
+set /p operatorAddr="operator address: "
+:mineLoop
+set storeFile=%units%/%RANDOM%%RANDOM%
+%application% %cpar% %storeFile% %operatorAddr%
+goto:mineLoop
 
 pause
