@@ -36,11 +36,12 @@ const node = "node";
 const minerApp = "../../index.js";
 const operatorApp = "../../../Operator/index.js";
 
-process.chdir(process.cwd() + '/Apps/Miner/test/functional-test');
-console.log("Current directory: " + process.cwd());
-
 //Default timer for executions of test is 2 minutes
 const maxTimeOut = 2 * 60 * 1000;
+
+//Change to current directory
+console.log("Changing directory to: " + process.cwd() + "/Apps/Miner/test/functional-test");
+process.chdir(process.cwd() + "/Apps/Miner/test/functional-test");
 
 describe('General functional tests', function () {
 
@@ -52,103 +53,103 @@ describe('General functional tests', function () {
                 {args: ['-h'], expected: minerConfig.minerVersion, unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
-                        /*{args: ['-uDns'], expected: 'UsInf0089', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         try {
-                         var DNS = JSON.parse(modFs.readFileSync(minerConfig.minerDnsFile.path));
-                         DNS["76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718"] = {ip: "127.0.0.1", port: "1993"};
-                         modFs.writeFileSync(minerConfig.minerDnsFile.path, JSON.stringify(DNS), "utf8");
-                         return true;
-                         } catch (exception) {
-                         //Nothing
-                         }
-                         return false;
-                         }},
-                         {args: ['-lGO'], expected: 'UsInf0054', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-k', 'testKey'], expected: 'UsInf0053', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return modFs.existsSync("testKey" + minerConfig.minerExtensions.key);
-                         }},
-                         {args: ['-cCfg', 'Mihail Maldzhanski', `testkey${minerConfig.minerExtensions.key}`, 'testCfg'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return modFs.existsSync(minerConfig.minerConfigFile);
-                         }},
-                         {args: ['-uCfg', 'Mihail Maldzhanski New', `testkey${minerConfig.minerExtensions.key}`, 'testCfg'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return (modFs.readFileSync(minerConfig.minerConfigFile, "utf8")).indexOf('Mihail Maldzhanski New') !== -1;
-                         }},
-                         {args: ['-iCfg', 'Apps/Miner/contactsInit.dbook', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         var configFile = modFs.readFileSync(minerConfig.minerConfigFile, 'utf8');
-                         var importedConfigFile = modFs.readFileSync('Apps/Miner/contactsInit.dbook', 'utf8');
-                         
-                         try {
-                         configFile = JSON.parse(configFile);
-                         importedConfigFile = JSON.parse(importedConfigFile);
-                         
-                         for (let operator in importedConfigFile.Operators) {
-                         if (!configFile.Operators.hasOwnProperty(operator)) {
-                         return false;
-                         }
-                         }
-                         } catch (ex) {
-                         throw new Error(ex);
-                         return false;
-                         }
-                         return true;
-                         }},
-                         {args: ['-aC', 'Tester Name', '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         var configFile = modFs.readFileSync(minerConfig.minerConfigFile, 'utf8');
-                         
-                         try {
-                         configFile = JSON.parse(configFile);
-                         if (!('Tester Name' in configFile.Contacts) ||
-                         configFile.Contacts['Tester Name'] !== '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6') {
-                         return false;
-                         }
-                         } catch (ex) {
-                         throw new Error(ex);
-                         return false;
-                         }
-                         
-                         return true;
-                         }},
-                         {args: ['-aO', 'Tester Operator', '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         var configFile = modFs.readFileSync(minerConfig.minerConfigFile, 'utf8');
-                         
-                         try {
-                         configFile = JSON.parse(configFile);
-                         if (!('Tester Operator' in configFile.Operators) ||
-                         configFile.Operators['Tester Operator'] !== '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6') {
-                         return false;
-                         }
-                         } catch (ex) {
-                         throw new Error(ex);
-                         return false;
-                         }
-                         
-                         return true;
-                         }},
-                         {args: ['-lO', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         
-                         return true;
-                         }},
-                         {args: ['-lC', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-pN', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-pD', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-eAc', "exportedContacts"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-eAo', "exportedOperators"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-eK', "exportedKeys"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-cc', './units/testUnit', '76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718'], expected: 'UsInf0073', unExpected: 'Err', specificExec: function (appReturnedData) {
+                {args: ['-uDns'], expected: 'UsInf0089', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        try {
+                            var DNS = JSON.parse(modFs.readFileSync(minerConfig.minerDnsFile.path));
+                            DNS["76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718"] = {ip: "127.0.0.1", port: "1993"};
+                            modFs.writeFileSync(minerConfig.minerDnsFile.path, JSON.stringify(DNS), "utf8");
+                            return true;
+                        } catch (exception) {
+                            //Nothing
+                        }
+                        return false;
+                    }},
+                {args: ['-lGO'], expected: 'UsInf0054', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-k', 'testKey'], expected: 'UsInf0053', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return modFs.existsSync("testKey" + minerConfig.minerExtensions.key);
+                    }},
+                {args: ['-cCfg', 'Mihail Maldzhanski', `testkey${minerConfig.minerExtensions.key}`, 'testCfg'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return modFs.existsSync(minerConfig.minerConfigFile);
+                    }},
+                {args: ['-uCfg', 'Mihail Maldzhanski New', `testkey${minerConfig.minerExtensions.key}`, 'testCfg'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return (modFs.readFileSync(minerConfig.minerConfigFile, "utf8")).indexOf('Mihail Maldzhanski New') !== -1;
+                    }},
+                {args: ['-iCfg', '../../contactsInit.dbook', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        var configFile = modFs.readFileSync(minerConfig.minerConfigFile, 'utf8');
+                        var importedConfigFile = modFs.readFileSync('../../contactsInit.dbook', 'utf8');
+
+                        try {
+                            configFile = JSON.parse(configFile);
+                            importedConfigFile = JSON.parse(importedConfigFile);
+
+                            for (let operator in importedConfigFile.Operators) {
+                                if (!configFile.Operators.hasOwnProperty(operator)) {
+                                    return false;
+                                }
+                            }
+                        } catch (ex) {
+                            throw new Error(ex);
+                            return false;
+                        }
+                        return true;
+                    }},
+                {args: ['-aC', 'Tester Name', '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        var configFile = modFs.readFileSync(minerConfig.minerConfigFile, 'utf8');
+
+                        try {
+                            configFile = JSON.parse(configFile);
+                            if (!('Tester Name' in configFile.Contacts) ||
+                                    configFile.Contacts['Tester Name'] !== '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6') {
+                                return false;
+                            }
+                        } catch (ex) {
+                            throw new Error(ex);
+                            return false;
+                        }
+
+                        return true;
+                    }},
+                {args: ['-aO', 'Tester Operator', '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        var configFile = modFs.readFileSync(minerConfig.minerConfigFile, 'utf8');
+
+                        try {
+                            configFile = JSON.parse(configFile);
+                            if (!('Tester Operator' in configFile.Operators) ||
+                                    configFile.Operators['Tester Operator'] !== '3f2b9-2f458-f2066-26c65-ea67c-a6b48-86ced-e9dc6') {
+                                return false;
+                            }
+                        } catch (ex) {
+                            throw new Error(ex);
+                            return false;
+                        }
+
+                        return true;
+                    }},
+                {args: ['-lO', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+
+                        return true;
+                    }},
+                {args: ['-lC', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-pN', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-pD', minerConfig.minerConfigFile], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-eAc', "exportedContacts"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-eAo', "exportedOperators"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-eK', "exportedKeys"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                        /*{args: ['-cc', './units/testUnit', '76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718'], expected: 'UsInf0073', unExpected: 'Err', specificExec: function (appReturnedData) {
                          return true;
                          }},
                          {args: ['-v', `./units/testUnit${minerConfig.minerExtensions.unit}`], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
@@ -200,34 +201,19 @@ describe('General functional tests', function () {
             //Set user defined timeout
             this.timeout(maxTimeOut);
             //Exec node
-            console.log(process.cwd(), node, [minerApp, ...test.args], )
-
-            var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {
-                cwd: process.cwd(),
-                env: process.env,
-                stdio: 'pipe',
-                encoding: 'utf-8'
-            });
-
-//            try {
-//                var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe'], shell: true});
-//            } catch (ex) {
-//                console.log(ex);
-//            }
-            var data = minerAppExecVersion.output[1];
-
-            console.log(JSON.stringify(minerAppExecVersion));
+            var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe']});
+            var data = minerAppExecVersion.stdout.toString();
 
             //Add return data from execution
             addContext(this, {title: "Execution report", value: data});
 
             //Real tests
             if (test.expected !== '' && data.indexOf(test.expected) === -1) {
-                throw new Error("Expected: " + test.expected + "Found: " + data);
+                throw new Error("Expected: " + test.expected);
             }
 
             if (test.unExpected !== '' && data.indexOf(test.unExpected) !== -1) {
-                throw new Error("Unxpected: " + test.unExpected + "Found: " + data);
+                throw new Error("Unxpected: " + test.unExpected);
             }
 
             if (test.specificExec(data) !== true) {
