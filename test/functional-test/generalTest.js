@@ -205,7 +205,7 @@ describe('General functional tests', function () {
 
             //Real tests
             if (test.expected !== '' && data.indexOf(test.expected) === -1) {
-                throw new Error("Expected: " + test.expected + "Found: " + data);
+                throw new Error("Found: " + data);
             }
 
             if (test.unExpected !== '' && data.indexOf(test.unExpected) !== -1) {
