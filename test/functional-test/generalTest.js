@@ -201,15 +201,23 @@ describe('General functional tests', function () {
             this.timeout(maxTimeOut);
             //Exec node
             console.log(process.cwd(), node, [minerApp, ...test.args], )
-            try {
-                var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe'],shell:true});
-            } catch (ex) {
-                console.log(ex);
-            }
-            var data = minerAppExecVersion.stdout.toString();
 
-            console.log(JSON.stringify(data));
-            
+            var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {
+                cwd: process.cwd(),
+                env: process.env,
+                stdio: 'pipe',
+                encoding: 'utf-8'
+            });
+
+//            try {
+//                var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe'], shell: true});
+//            } catch (ex) {
+//                console.log(ex);
+//            }
+            var data = minerAppExecVersion.output[1];
+
+            console.log(data);
+
             //Add return data from execution
             addContext(this, {title: "Execution report", value: data});
 
