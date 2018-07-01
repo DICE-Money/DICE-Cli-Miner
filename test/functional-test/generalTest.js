@@ -216,7 +216,7 @@ describe('General functional tests', function () {
 //            }
             var data = minerAppExecVersion.output[1];
 
-            console.log(data);
+            console.log(JSON.stringify(minerAppExecVersion));
 
             //Add return data from execution
             addContext(this, {title: "Execution report", value: data});
