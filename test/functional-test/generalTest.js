@@ -49,7 +49,7 @@ describe('General functional tests', function () {
                 {args: ['-h'], expected: minerConfig.minerVersion, unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
-                {args: ['-uDns'], expected: 'UsInf0089', unExpected: 'Err', specificExec: function (appReturnedData) {
+                /*{args: ['-uDns'], expected: 'UsInf0089', unExpected: 'Err', specificExec: function (appReturnedData) {
                         try {
                             var DNS = JSON.parse(modFs.readFileSync(minerConfig.minerDnsFile.path));
                             DNS["76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718"] = {ip: "127.0.0.1", port: "1993"};
@@ -145,7 +145,7 @@ describe('General functional tests', function () {
                 {args: ['-eK', "exportedKeys"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
-                /*{args: ['-cc', './units/testUnit', '76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718'], expected: 'UsInf0073', unExpected: 'Err', specificExec: function (appReturnedData) {
+                {args: ['-cc', './units/testUnit', '76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718'], expected: 'UsInf0073', unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
                 {args: ['-v', `./units/testUnit${minerConfig.minerExtensions.unit}`], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
@@ -178,7 +178,6 @@ describe('General functional tests', function () {
             });
             } catch (ex) {
             }
-        console.log(process.cwd());
     });
 
  /*   it('Check is operator Valid', function () {
@@ -206,11 +205,11 @@ describe('General functional tests', function () {
 
             //Real tests
             if (test.expected !== '' && data.indexOf(test.expected) === -1) {
-                throw new Error("Expected: " + test.expected);
+                throw new Error("Expected: " + test.expected + "Found: " + data);
             }
 
             if (test.unExpected !== '' && data.indexOf(test.unExpected) !== -1) {
-                throw new Error("Unxpected: " + test.unExpected);
+                throw new Error("Unxpected: " + test.unExpected + "Found: " + data);
             }
 
             if (test.specificExec(data) !== true) {
