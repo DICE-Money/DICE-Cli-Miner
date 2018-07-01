@@ -33,7 +33,7 @@ const minerConfig = require('../../config/minerConfig.js');
 const commands = minerConfig.minerCommandTable;
 //General Test vars
 const node = "node";
-const minerApp = "Apps/Miner/index.js";
+const minerApp = "./Apps/Miner/index.js";
 const operatorApp = "../../../Operator/index.js";
 
 //Default timer for executions of test is 2 minutes
@@ -176,8 +176,9 @@ describe('General functional tests', function () {
             modFs.readdirSync('./units/').forEach(file => {
                 modFs.unlinkSync(`./units/${file}`);
             });
-        } catch (ex) {
-        }
+            } catch (ex) {
+            }
+        console.log(process.cwd());
     });
 
  /*   it('Check is operator Valid', function () {
