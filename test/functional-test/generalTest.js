@@ -202,7 +202,7 @@ describe('General functional tests', function () {
             //Exec node
             console.log(process.cwd(), node, [minerApp, ...test.args], )
             try {
-                var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe']});
+                var minerAppExecVersion = child_process.spawnSync(node, [minerApp, ...test.args], {stdio: ['pipe', 'pipe', 'pipe'],shell:true});
             } catch (ex) {
                 console.log(ex);
             }
