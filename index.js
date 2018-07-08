@@ -80,6 +80,7 @@ const commandFunctions = {
     'funcListUnits': funcListUnits,
     "funcUpdateDns": funcUpdateDns,
     "funcCalculate": funcCalculate,
+    "funcTradeAmount": funcTradeAmount,
     'funcValidate': funcValidate,
     'funcKeyGen': funcKeyGen,
     'funcTradeOwnerless': funcTradeOwnerless,
@@ -154,7 +155,7 @@ function funcCalculate() {
                         view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
 
                     });
-                    
+
                     //Scrapping is not supported for SW DICE unit generation
                     if (isCudaReq === true) {
                         currentState = exConfig.minerStates.eStep_IDLE;
@@ -405,6 +406,16 @@ function funcTradeCurrent() {
     }
 }
 
+function funcTradeAmount() {
+    //Get Units
+    var units = extractUnitsRecursivly();
+    var sortedUnits = sortListOfUnits(units);
+
+    //List all units
+    //listUnit(units);
+    listUnitOptimized(sortedUnits);
+}
+
 function funcTradeNew() {
     //Start scheduled program
     scheduler_10ms = setInterval(main10ms, 10);
@@ -589,7 +600,11 @@ function funcListUnits() {
 
     //List all units
     //listUnit(units);
-    listUnitOptimized(sortedUnits);
+    listUnitOptimized(sortedUnits, (unitsData, balance) => {
+        printListOfUnits(unitsData);
+        view_console.printCode("USER_INFO", "UsInf0090", balance);
+        funcExit();
+    });
 }
 
 function funcHelp() {
@@ -1289,7 +1304,7 @@ function listUnit(units) {
     }
 }
 
-function listUnitOptimized(units) {
+function listUnitOptimized(units, funcCallback) {
     var fileIndex = 0;
     var balance = 0;
     var valData = {k: undefined, N: undefined};
@@ -1393,9 +1408,7 @@ function listUnitOptimized(units) {
                         currentState = states.eState_InitConnection;
                     }
                 } else {
-                    printListOfUnits(unitsData);
-                    view_console.printCode("USER_INFO", "UsInf0090", balance);
-                    funcExit();
+                    funcCallback(unitsData, balance);
                 }
 
                 break;
