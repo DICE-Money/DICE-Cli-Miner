@@ -67,7 +67,8 @@ const Args = {
     nameOfOperator: undefined,
     digitalAddrOfContact: undefined,
     digitalAddrOfOperator: undefined,
-    folderWithUnits: undefined
+    folderWithUnits: undefined,
+    ammount: undefined
 };
 
 //Command execution table

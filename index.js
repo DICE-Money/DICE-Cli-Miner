@@ -30,6 +30,7 @@ const modBase58 = require('../../models/Base58/Base58.js');
 const modVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
 const modCommandParser = require('../../models/CommandParser/CommandParser.js');
 const modControllers = require('./Controllers/controllers.js');
+const modAmountWorker = require('../../models/AmountWorker/AmountWorker.js');
 
 //Configuration
 const exConfig = require('./config/minerConfig.js');
@@ -48,7 +49,7 @@ var DICEValue = new modDICEValue(DiceCalculatorL);
 var Time = new Date();
 var Bs58 = new modBase58();
 var CommandParser = new modCommandParser(process.argv, exConfig.minerArgs);
-
+var nstAmmount = new modAmountWorker();
 
 //Local static Data`
 var isRequestTransmitted = false;
@@ -413,7 +414,13 @@ function funcTradeAmount() {
 
     //List all units
     //listUnit(units);
-    listUnitOptimized(sortedUnits);
+    listUnitOptimized(sortedUnits, (units, balance) => {
+        console.log("Trade amount feature.");
+        console.log("You want to trade", appArgs.ammount, "mDICE");
+        //console.log(JSON.stringify(units));
+        console.log(nstAmmount.encodeAmount(units, appArgs.ammount));
+        funcExit();
+    });
 }
 
 function funcTradeNew() {
@@ -814,7 +821,7 @@ function continueInitconnection() {
             currentState = exConfig.minerStates.eExit_FromApp;
         }, view_console);
     } catch (e) {
-        view_console.printCode("ERROR", "Err0008", e);
+        view_console.printCode("ERROR", "Err0008", e + appArgs.addrOp);
         funcExit();
     }
 }
