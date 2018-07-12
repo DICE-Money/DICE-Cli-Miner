@@ -417,9 +417,23 @@ function funcTradeAmount() {
     listUnitOptimized(sortedUnits, (units, balance) => {
         console.log("Trade amount feature.");
         console.log("You want to trade", appArgs.ammount, "mDICE");
-        //console.log(JSON.stringify(units));
-        console.log(nstAmmount.encodeAmount(units, appArgs.ammount));
-        funcExit();
+        var arrAmUnits = [];
+        var arrUnitsContent = [];
+
+        if (balance * 1024 < appArgs.ammount) {
+            //Not enough
+            console.log("available units are insufficient for the amount");
+        } else if (balance * 1024 === appArgs.ammount) {
+            //Use all units
+        } else {
+            //Get amount
+            arrAmUnits = nstAmmount.encodeAmount(units, appArgs.ammount);
+            arrAmUnits.forEach((path) => {
+                var file = modFs.readFileSync(path, "utf8");
+                arrUnitsContent.push(DICE.fromBS58(file));
+            });
+        }
+        //funcExit();
     });
 }
 
@@ -1415,6 +1429,7 @@ function listUnitOptimized(units, funcCallback) {
                         currentState = states.eState_InitConnection;
                     }
                 } else {
+                    clearInterval(scheduler_10ms);
                     funcCallback(unitsData, balance);
                 }
 
