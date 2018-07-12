@@ -37,19 +37,20 @@ const appStates = {
     eStep_CurrentOwnerTrade: 9,
     eStep_NewOwnerTrade: 10,
     eStep_CurrentReleaseOwnerlessToServer: 11,
-
-    eStep_CurrentOwnerClaimToServer: 12,
-    eStep_NewOwnerClaimToServer: 13,
-    eStep_CurrentReleaseOwnerless: 14,
+    eStep_GetDICE_FromArray: 12,
+    
+    eStep_CurrentOwnerClaimToServer: 13,
+    eStep_NewOwnerClaimToServer: 14,
+    eStep_CurrentReleaseOwnerless: 15,
 
     //Idle
-    eStep_IDLE: 15,
+    eStep_IDLE: 16,
 
     //DNS Downloading
-    eStep_DnsBinderWait: 16,
+    eStep_DnsBinderWait: 17,
 
-    eExit_FromApp: 17,
-    eStep_Count: 18
+    eExit_FromApp: 18,
+    eStep_Count: 19
 };
 
 //Data stored buffer from console arguments
@@ -97,7 +98,7 @@ const CommandsTable =
             {args: ['-v', '--validate'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
             {args: ['-k', '--keygen'], dataArgs: ['fileOutput'], exec: 'funcKeyGen', help: "Generate new KeyPair of Digital Address and Private Key"},
             {args: ['-to', '--tradeOwnerless'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
-            {args: ['-ta', '--tradeAmount'], dataArgs: ['folderWithUnits', 'ammount', 'keyPair'], exec: 'funcTradeAmount', help: "Trade specific amount of DICE units. Amount must be in mDICE units."},
+            {args: ['-ta', '--tradeAmount'], dataArgs: ['folderWithUnits', 'ammount', 'fileOutput', 'keyPair'], exec: 'funcTradeAmount', help: "Trade specific amount of DICE units. Amount must be in mDICE units."},
             {args: ['-tc', '--tradeCurrent'], dataArgs: ['diceUnit', 'fileOutput', 'addrMin', 'keyPair'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
             {args: ['-tn', '--tradeNew'], dataArgs: ['diceUnit', 'fileOutput', 'keyPair'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
             {args: ['-cc', '--calculateCuda'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
@@ -118,13 +119,14 @@ const viewModelCfg = {
 };
 
 //Ex: 'text' 'code' 'rpc'
-const viewModelOutput = 'code';
+const viewModelOutput = 'text';
 
 //Default extentions
 const configExt = ".dconf";
 const keyExt = ".dkeys";
 const unitExt = ".dice";
 const unitEncExt = ".diceEnc";
+const unitasPackExt = ".dicePack";
 
 /* javascript-obfuscator:disable */
 //View Interfaces
@@ -157,4 +159,4 @@ module.exports.minerVersion = version;
 module.exports.minerSecurityLevels = securityLevels;
 module.exports.minerConfigFile = configFile;
 module.exports.minerHttpDns = httpsDns;
-module.exports.minerExtensions = {unit: unitExt, key: keyExt, conf: configExt, unitEnc: unitEncExt};
+module.exports.minerExtensions = {unit: unitExt, key: keyExt, conf: configExt, unitEnc: unitEncExt, unitsPack: unitasPackExt};

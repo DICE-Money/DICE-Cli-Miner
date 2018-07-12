@@ -417,24 +417,115 @@ function funcTradeAmount() {
     listUnitOptimized(sortedUnits, (units, balance) => {
         console.log("Trade amount feature.");
         console.log("You want to trade", appArgs.ammount, "mDICE");
-        var arrAmUnits = [];
-        var arrUnitsContent = [];
+        var objAmountReaturnData = {units: [], amount: 0.0};
 
         if (balance * 1024 < appArgs.ammount) {
             //Not enough
             console.log("available units are insufficient for the amount");
+            funcExit();
         } else if (balance * 1024 === appArgs.ammount) {
             //Use all units
+            objAmountReaturnData.units = units;
         } else {
             //Get amount
-            arrAmUnits = nstAmmount.encodeAmount(units, appArgs.ammount);
-            arrAmUnits.forEach((path) => {
-                var file = modFs.readFileSync(path, "utf8");
-                arrUnitsContent.push(DICE.fromBS58(file));
-            });
+            objAmountReaturnData = nstAmmount.encodeAmount(units, appArgs.ammount);
+            if (objAmountReaturnData.amount * 1024 > appArgs.ammount) {
+                console.log(`unable to assemble the exact amount. Possible amount ${objAmountReaturnData.amount * 1024} mDICE.`);
+                funcExit();
+            }
         }
-        //funcExit();
+
+        //Request Ownerless
+        helperFunctionOfAmounTrading(objAmountReaturnData.units, () => {
+            console.log("All units are marked as ownerless");
+            var arrUnitsContent = [];
+
+            for (var unitPath of objAmountReaturnData.units) {
+                arrUnitsContent.push(modFs.readFileSync(unitPath, "utf-8"));
+            }
+
+            modFs.writeFileSync(`${appArgs.fileOutput}_${objAmountReaturnData.amount * 1024}${exConfig.minerExtensions.unitsPack}`, Bs58.encode(JSON.stringify(arrUnitsContent)).toString());
+
+            funcExit();
+        });
     });
+}
+
+function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
+
+    //Copy in local stack
+    var arrUnitPaths = JSON.parse(JSON.stringify(arrUnitPaths));
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerless;
+
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_CurrentReleaseOwnerless:
+
+                //Get key and address
+                getKeyPair();
+
+                //Init Connections
+                dnsInitialization();
+
+                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
+                break;
+
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                executeExchangeCertificate(exConfig.minerStates.eStep_GetDICE_FromArray);
+                break;
+
+            case exConfig.minerStates.eStep_GetDICE_FromArray:
+                if (arrUnitPaths.length > 0) {
+                    // Read File to DICE Unit
+                    var file = modFs.readFileSync(arrUnitPaths.pop(), "utf8");
+                    DICE = DICE.fromBS58(file);
+
+                    //Get Address from Unit
+                    getAddrOperatorFromDICEUnit();
+
+                    //Request to server
+                    currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
+                } else {
+                    currentState = exConfig.minerStates.eExit_FromApp;
+                }
+                break;
+
+            case exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    var claimData = {};
+                    //Set DICE Unit to Dice validatior
+                    DICEValue.setDICEProtoFromUnit(DICE);
+
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET CurrentReleaseOwnerless", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
+                });
+                break;
+
+            case exConfig.minerStates.eExit_FromApp:
+                clearInterval(scheduler_10ms);
+                funcCallback();
+                break;
+
+            default:
+                throw "Application has Improper state !";
+        }
+    }
 }
 
 function funcTradeNew() {
