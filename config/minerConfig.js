@@ -119,7 +119,7 @@ const viewModelCfg = {
 };
 
 //Ex: 'text' 'code' 'rpc'
-const viewModelOutput = 'text';
+const viewModelOutput = 'code';
 
 //Default extentions
 const configExt = ".dconf";
