@@ -452,7 +452,6 @@ function funcTradeAmount() {
 }
 
 function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
-
     //Copy in local stack
     var arrUnitPaths = JSON.parse(JSON.stringify(arrUnitPaths));
 
@@ -494,7 +493,12 @@ function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
                     getAddrOperatorFromDICEUnit();
 
                     //Request to server
-                    currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
+                    if (appArgs.addrMin !== undefined) {
+                        currentState = exConfig.minerStates.eStep_CurrentOwnerClaimToServer;
+                    } else {
+                        currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
+                    }
+
                 } else {
                     currentState = exConfig.minerStates.eExit_FromApp;
                 }
@@ -510,6 +514,22 @@ function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
                     claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
                     var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
                     TCPClient.Request("SET CurrentReleaseOwnerless", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_CurrentOwnerClaimToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    var claimData = {};
+                    claimData["newOwner"] = AddressGen.convertHexDashToBS58(appArgs.addrMin);
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET CurrentOwnerClaim", addr, encryptedData);
                 },
                         (response) => {
                     printServerReturnData(response);

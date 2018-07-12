@@ -98,7 +98,7 @@ const CommandsTable =
             {args: ['-v', '--validate'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcValidate', help: "Exports content from Base58 saved unit and value of the unit"},
             {args: ['-k', '--keygen'], dataArgs: ['fileOutput'], exec: 'funcKeyGen', help: "Generate new KeyPair of Digital Address and Private Key"},
             {args: ['-to', '--tradeOwnerless'], dataArgs: ['diceUnit', 'keyPair'], exec: 'funcTradeOwnerless', help: "Trade ownerless dice unit"},
-            {args: ['-ta', '--tradeAmount'], dataArgs: ['folderWithUnits', 'ammount', 'fileOutput', 'keyPair'], exec: 'funcTradeAmount', help: "Trade specific amount of DICE units. Amount must be in mDICE units."},
+            {args: ['-ta', '--tradeAmount'], dataArgs: ['folderWithUnits', 'ammount', 'fileOutput', 'addrMin','keyPair'], exec: 'funcTradeAmount', help: "Trade specific amount of DICE units. Amount must be in mDICE units."},
             {args: ['-tc', '--tradeCurrent'], dataArgs: ['diceUnit', 'fileOutput', 'addrMin', 'keyPair'], exec: 'funcTradeCurrent', help: "Trade current owner of unit "},
             {args: ['-tn', '--tradeNew'], dataArgs: ['diceUnit', 'fileOutput', 'keyPair'], exec: 'funcTradeNew', help: "Trade request from new owner (for ownerless unit or traded unit)"},
             {args: ['-cc', '--calculateCuda'], dataArgs: ['fileOutput', 'addrOp', 'specificUnitValue', 'keyPair'], exec: 'funcCalculateCUDA', help: "Calculate new DICE Unit by using CUDA accelerated application"},
