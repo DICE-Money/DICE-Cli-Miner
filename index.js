@@ -438,17 +438,38 @@ function funcTradeAmount() {
         //Request Ownerless
         helperFunctionOfAmounTrading(objAmountReaturnData.units, () => {
             console.log("All units are marked as ownerless");
-            var arrUnitsContent = [];
-
-            for (var unitPath of objAmountReaturnData.units) {
-                arrUnitsContent.push(modFs.readFileSync(unitPath, "utf-8"));
-            }
-
-            modFs.writeFileSync(`${appArgs.fileOutput}_${objAmountReaturnData.amount * 1024}${exConfig.minerExtensions.unitsPack}`, Bs58.encode(JSON.stringify(arrUnitsContent)).toString());
-
+            helperFunctionForExportingOfAmountTrading(objAmountReaturnData);
             funcExit();
         });
     });
+}
+
+function helperFunctionForExportingOfAmountTrading(objAmountReaturnData) {
+    var arrUnitsContent = [];
+
+    //Read allunits and store to array
+    for (var unitPath of objAmountReaturnData.units) {
+        arrUnitsContent.push(modFs.readFileSync(unitPath, "utf-8"));
+    }
+
+    //Decide to encrypt
+    if (appArgs.addrMin !== undefined) {
+        //Encrypt unit which is in BS58 with new owner address
+        var encData = encryptor.encryptFilePublicKey( JSON.stringify(arrUnitsContent), Buffer.from(Bs58.decode(AddressGen.convertHexDashToBS58(appArgs.addrMin))));
+
+        //Preapare data for storing
+        var fsData = {};
+        fsData['addr'] = keyPair.digitalAddress;
+        fsData['unit'] = encData;
+
+    } else {
+        var fsData = arrUnitsContent;
+    }
+
+    console.log(JSON.stringify(fsData));
+
+    //Save to filsystem
+    modFs.writeFileSync(`${appArgs.fileOutput}_${objAmountReaturnData.amount * 1024}${exConfig.minerExtensions.unitsPack}`, Bs58.encode(Buffer.from(JSON.stringify(fsData),"utf-8")).toString());
 }
 
 function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
@@ -563,7 +584,7 @@ function funcTradeNew() {
                     // Read File to DICE Unit
                     var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
                     DICE = DICE.fromBS58(file);
-
+                    console.log(e);
                     //Get key and address
                     getKeyPair();
                 }
@@ -615,6 +636,10 @@ function funcTradeNew() {
                 throw "Application has Improper state !";
         }
     }
+}
+
+function helperAmountWorkerUnpack(strPathToPack) {
+
 }
 
 function funcCalculateCUDA() {
@@ -1055,8 +1080,13 @@ function newOwnerTrade() {
     //Encrypt Hash with new owner address
     var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
-    //Logic for application is to trade an already mined unit which is stored in FS
-    DICE = DICE.fromBS58(decoded.toString());
+    if (typeof (decoded) === "Array") {
+        console.log(decoded);
+        funcExit();
+    } else {
+        //Logic for application is to trade an already mined unit which is stored in FS
+        DICE = DICE.fromBS58(decoded.toString());
+    }
 
     //Hash of Unit
     var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
