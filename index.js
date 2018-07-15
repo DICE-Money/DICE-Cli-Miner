@@ -65,6 +65,7 @@ var isCudaReq = false;
 var securityCounter = 0;
 var isTcpReady = false;
 var isDnsHttpRequested = false;
+var arrUnitsPacket = undefined;
 
 //Object {get(),remove(fileName)}
 var diceScrapFuncHandlers = undefined;
@@ -455,7 +456,7 @@ function helperFunctionForExportingOfAmountTrading(objAmountReaturnData) {
     //Decide to encrypt
     if (appArgs.addrMin !== undefined) {
         //Encrypt unit which is in BS58 with new owner address
-        var encData = encryptor.encryptFilePublicKey( JSON.stringify(arrUnitsContent), Buffer.from(Bs58.decode(AddressGen.convertHexDashToBS58(appArgs.addrMin))));
+        var encData = encryptor.encryptFilePublicKey(JSON.stringify(arrUnitsContent), Buffer.from(Bs58.decode(AddressGen.convertHexDashToBS58(appArgs.addrMin))));
 
         //Preapare data for storing
         var fsData = {};
@@ -466,10 +467,8 @@ function helperFunctionForExportingOfAmountTrading(objAmountReaturnData) {
         var fsData = arrUnitsContent;
     }
 
-    console.log(JSON.stringify(fsData));
-
     //Save to filsystem
-    modFs.writeFileSync(`${appArgs.fileOutput}_${objAmountReaturnData.amount * 1024}${exConfig.minerExtensions.unitsPack}`, Bs58.encode(Buffer.from(JSON.stringify(fsData),"utf-8")).toString());
+    modFs.writeFileSync(`${appArgs.fileOutput}_${objAmountReaturnData.amount * 1024}${exConfig.minerExtensions.unitsPack}`, Bs58.encode(Buffer.from(JSON.stringify(fsData), "utf-8")).toString());
 }
 
 function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
@@ -483,14 +482,39 @@ function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_CurrentReleaseOwnerless:
-
                 //Get key and address
                 getKeyPair();
-
                 //Init Connections
                 dnsInitialization();
+                //Clean previous use of var
+                appArgs.addrOp = undefined;
+                currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
+                break;
 
-                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+            case exConfig.minerStates.eStep_GetDICE_FromArray:
+                if (arrUnitPaths !== undefined && arrUnitPaths.length > 0) {
+                    // Read File to DICE Unit
+                    var file = modFs.readFileSync(arrUnitPaths.pop(), "utf8");
+                    DICE = DICE.fromBS58(file);
+
+                    //Read address of operator
+                    var addrOpL = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+
+                    if (addrOpL !== appArgs.addrOp) {
+                        //Get Address from Unit
+                        appArgs.addrOp = addrOpL;
+
+                        //Request exchanging of certificates
+                        currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                    } else {
+                        currentState =
+                                appArgs.addrMin !== undefined ?
+                                exConfig.minerStates.eStep_CurrentOwnerClaimToServer : // TRUE
+                                exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer; // FALSE
+                    }
+                } else {
+                    currentState = exConfig.minerStates.eExit_FromApp;
+                }
                 break;
 
             case exConfig.minerStates.eStep_DnsBinderWait:
@@ -501,28 +525,10 @@ function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
                 break;
 
             case exConfig.minerStates.eStep_ExchangeCertificates:
-                executeExchangeCertificate(exConfig.minerStates.eStep_GetDICE_FromArray);
-                break;
-
-            case exConfig.minerStates.eStep_GetDICE_FromArray:
-                if (arrUnitPaths.length > 0) {
-                    // Read File to DICE Unit
-                    var file = modFs.readFileSync(arrUnitPaths.pop(), "utf8");
-                    DICE = DICE.fromBS58(file);
-
-                    //Get Address from Unit
-                    getAddrOperatorFromDICEUnit();
-
-                    //Request to server
-                    if (appArgs.addrMin !== undefined) {
-                        currentState = exConfig.minerStates.eStep_CurrentOwnerClaimToServer;
-                    } else {
-                        currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer;
-                    }
-
-                } else {
-                    currentState = exConfig.minerStates.eExit_FromApp;
-                }
+                executeExchangeCertificate(
+                        appArgs.addrMin !== undefined ?
+                        exConfig.minerStates.eStep_CurrentOwnerClaimToServer : // TRUE
+                        exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer); // FALSE
                 break;
 
             case exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer:
@@ -574,23 +580,48 @@ function funcTradeNew() {
     scheduler_10ms = setInterval(main10ms, 10);
     currentState = exConfig.minerStates.eStep_NewOwnerTrade;
 
+    //Local vars
+    var bIsPacket = false;
+
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_NewOwnerTrade:
-                try {
-                    newOwnerTrade();
-                } catch (e) {
-                    // Try as normal DICE
-                    // Read File to DICE Unit
-                    var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
-                    DICE = DICE.fromBS58(file);
-                    console.log(e);
-                    //Get key and address
-                    getKeyPair();
+
+                //Get key and address
+                getKeyPair();
+
+                //Read data from file input
+                bIsPacket = newOwnerTrade();
+
+                //Check is it packet 
+                if (!bIsPacket) {
+                    getAddrOperatorFromDICEUnit();
+                    dnsInitialization();
+                    currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                } else {
+                    //received data is packet of units
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
                 }
-                getAddrOperatorFromDICEUnit();
-                dnsInitialization();
-                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_GetDICE_FromArray:
+                if (arrUnitsPacket !== undefined && arrUnitsPacket.length > 0) {
+                    DICE = DICE.fromBS58(arrUnitsPacket.pop());
+                    var addrOpL = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+
+                    //Check for different operator in units set
+                    if (addrOpL !== appArgs.addrOp) {
+                        getAddrOperatorFromDICEUnit();
+                        dnsInitialization();
+                        currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                    } else {
+                        currentState = exConfig.minerStates.eStep_NewOwnerClaimToServer;
+                    }
+
+                    dnsInitialization();
+                } else {
+                    funcExit();
+                }
                 break;
 
             case exConfig.minerStates.eStep_DnsBinderWait:
@@ -624,7 +655,7 @@ function funcTradeNew() {
                     } else {
                         saveDICEToFile(appArgs.fileOutput);
                     }
-                    currentState = exConfig.minerStates.eExit_FromApp;
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
                 });
                 break;
 
@@ -636,10 +667,6 @@ function funcTradeNew() {
                 throw "Application has Improper state !";
         }
     }
-}
-
-function helperAmountWorkerUnpack(strPathToPack) {
-
 }
 
 function funcCalculateCUDA() {
@@ -1068,6 +1095,9 @@ function curOwnerTrade() {
 //Miner 2 receives
 function newOwnerTrade() {
 
+    //Returned Data
+    var bIsPacket = false;
+
     //Get KeyPair
     getKeyPair();
 
@@ -1077,21 +1107,37 @@ function newOwnerTrade() {
     //Parse file from object
     var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
-    //Encrypt Hash with new owner address
-    var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
+    //Try to decrypt DICE Unit
+    try {
+        //Encrypt Hash with new owner address
+        var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
-    if (typeof (decoded) === "Array") {
-        console.log(decoded);
-        funcExit();
-    } else {
-        //Logic for application is to trade an already mined unit which is stored in FS
-        DICE = DICE.fromBS58(decoded.toString());
+        //Check is it packet or signle unit
+        try {
+            arrUnitsPacket = JSON.parse(decoded);
+            if (Array.isArray(arrUnitsPacket)) {
+                bIsPacket = true;
+            }
+        } catch (ex) {
+            //Logic for application is to trade an already mined unit which is stored in FS
+            DICE = DICE.fromBS58(decoded.toString());
+        }
+
+    } catch (ex) {
+        //Check is it packet or signle unit
+        try {
+            arrUnitsPacket = JSON.parse(Bs58.decode(DiceFileJSON));
+            if (Array.isArray(arrUnitsPacket)) {
+                bIsPacket = true;
+            }
+        } catch (ex) {
+            // Try as normal DICE
+            // Read File to DICE Unit
+            DICE = DICE.fromBS58(DiceFileJSON);
+        }
     }
 
-    //Hash of Unit
-    var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
-
-    return hashOfUnit;
+    return bIsPacket;
 }
 
 function printServerReturnData(data) {
