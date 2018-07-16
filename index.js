@@ -1104,11 +1104,11 @@ function newOwnerTrade() {
     //Read DICE Unit from FS
     var DiceFileJSON = modFs.readFileSync(appArgs.diceUnit, "utf8");
 
-    //Parse file from object
-    var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
-
     //Try to decrypt DICE Unit
     try {
+        //Parse file from object
+        var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
+
         //Encrypt Hash with new owner address
         var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
