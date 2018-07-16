@@ -185,7 +185,7 @@ describe('General functional tests', function () {
                 {args: ['-tn', `./trading/units/Sender1/CI_Packet_6.dicePack`, `./trading/units/Sender2/CI_Unit`, './trading/keys/Sender2'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
-                {args: ['-ta', './trading/units/Sender2/', '6', './trading/units/Sender2/CI_Packet', '16404-1528c-a60d3-e8054-1b9f1-539d7-68361-4616d', './trading/keys/Sender2'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                {args: ['-ta', './trading/units/Sender2/', '6', './trading/units/Sender2/CI_Packet', '16404-1528c-a60d3-e8054-1b9f1-539d7-68361-4616d', './trading/keys/Sender2'], expected: 'UsInf0075', unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
                 {args: ['-tn', `./trading/units/Sender2/CI_Packet_6.dicePack`, `./trading/units/Sender1/CI_Unit`, './trading/keys/Sender1'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
@@ -200,8 +200,19 @@ describe('General functional tests', function () {
             });
         } catch (ex) {
         }
-    });
 
+        try {
+            modFs.unlinkSync('./trading/units/Sender1/CI_Unit.5.dice');
+            modFs.unlinkSync('./trading/units/Sender1/CI_Unit.4.dice');
+            modFs.unlinkSync('./trading/units/Sender1/CI_Unit.3.dice');
+            modFs.unlinkSync('./trading/units/Sender1/CI_Packet_6.dicePack');
+            modFs.readdirSync('./trading/units/Sender2/').forEach(file => {
+                modFs.unlinkSync(`./trading/units/Sender2/${file}`);
+            });
+        } catch (ex) {
+        }
+    });
+    
     it.skip('Check is operator Valid', function () {
         var operatorExecutor = child_process.spawnSync(node, [operatorApp, "-ver"], {stdio: ['pipe', 'pipe', 'pipe']});
         var data = operatorExecutor.stdout.toString();
@@ -225,6 +236,8 @@ describe('General functional tests', function () {
             //Add return data from execution
             addContext(this, {title: "Execution ERROR report", value: minerAppExecVersion.stderr.toString()});
             addContext(this, {title: "Execution report", value: data});
+
+            //Print everything
 
             //Real tests
             if (test.expected !== '' && data.indexOf(test.expected) === -1) {
