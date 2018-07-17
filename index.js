@@ -416,13 +416,13 @@ function funcTradeAmount() {
     //List all units
     //listUnit(units);
     listUnitOptimized(sortedUnits, (units, balance) => {
-        console.log("Trade amount feature.");
-        console.log("You want to trade", appArgs.ammount, "mDICE");
+        view_console.printCode("USER_INFO", "UsInf0092", appArgs.ammount);
+
         var objAmountReaturnData = {units: [], amount: 0.0};
 
         if (balance * 1024 < appArgs.ammount) {
             //Not enough
-            console.log("available units are insufficient for the amount");
+            view_console.printCode("WARNING", "Warn0031");
             funcExit();
         } else if (balance * 1024 === appArgs.ammount) {
             //Use all units
@@ -431,14 +431,14 @@ function funcTradeAmount() {
             //Get amount
             objAmountReaturnData = nstAmmount.encodeAmount(units, appArgs.ammount);
             if (objAmountReaturnData.amount * 1024 > appArgs.ammount) {
-                console.log(`unable to assemble the exact amount. Possible amount ${objAmountReaturnData.amount * 1024} mDICE.`);
+                view_console.printCode("WARNING", "Warn0032", objAmountReaturnData.amount * 1024);
                 funcExit();
             }
         }
 
         //Request Ownerless
         helperFunctionOfAmounTrading(objAmountReaturnData.units, () => {
-            console.log("All units are marked as ownerless");
+            view_console.printCode("USER_INFO", "UsInf0092");
             helperFunctionForExportingOfAmountTrading(objAmountReaturnData);
             funcExit();
         });
