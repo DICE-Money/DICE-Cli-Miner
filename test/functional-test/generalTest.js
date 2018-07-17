@@ -211,6 +211,11 @@ describe('General functional tests', function () {
             });
         } catch (ex) {
         }
+        
+        //Create folder for second sender
+        if(!modFs.existsSync('./trading/units/Sender2/')){
+            modFs.mkdirSync('./trading/units/Sender2/');
+        }
     });
     
     it.skip('Check is operator Valid', function () {
