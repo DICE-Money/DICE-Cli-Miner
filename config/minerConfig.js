@@ -17,7 +17,7 @@
 
 //Application version
 const version =
-        "DICE Money <www.dice.money> - Miner Application Version[1.49 Patch 2] - 18.06.2018 \n\
+        "DICE Money <www.dice.money> - Miner Application Version[1.50] - 18.07.2018 \n\
 Written by Mihail Maldzhanski <pollarize@gmail.com>";
 
 //Application states
