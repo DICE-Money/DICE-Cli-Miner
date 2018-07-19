@@ -30,6 +30,7 @@ const modBase58 = require('../../models/Base58/Base58.js');
 const modVIEW = require('../../models/VIEW_Console/VIEW_Console.js');
 const modCommandParser = require('../../models/CommandParser/CommandParser.js');
 const modControllers = require('./Controllers/controllers.js');
+const modAmountWorker = require('../../models/AmountWorker/AmountWorker.js');
 
 //Configuration
 const exConfig = require('./config/minerConfig.js');
@@ -48,7 +49,7 @@ var DICEValue = new modDICEValue(DiceCalculatorL);
 var Time = new Date();
 var Bs58 = new modBase58();
 var CommandParser = new modCommandParser(process.argv, exConfig.minerArgs);
-
+var nstAmmount = new modAmountWorker();
 
 //Local static Data`
 var isRequestTransmitted = false;
@@ -64,6 +65,7 @@ var isCudaReq = false;
 var securityCounter = 0;
 var isTcpReady = false;
 var isDnsHttpRequested = false;
+var arrUnitsPacket = undefined;
 
 //Object {get(),remove(fileName)}
 var diceScrapFuncHandlers = undefined;
@@ -80,6 +82,7 @@ const commandFunctions = {
     'funcListUnits': funcListUnits,
     "funcUpdateDns": funcUpdateDns,
     "funcCalculate": funcCalculate,
+    "funcTradeAmount": funcTradeAmount,
     'funcValidate': funcValidate,
     'funcKeyGen': funcKeyGen,
     'funcTradeOwnerless': funcTradeOwnerless,
@@ -154,7 +157,7 @@ function funcCalculate() {
                         view_console.printCode("USER_INFO", "UsInf0065", elapsedTime);
 
                     });
-                    
+
                     //Scrapping is not supported for SW DICE unit generation
                     if (isCudaReq === true) {
                         currentState = exConfig.minerStates.eStep_IDLE;
@@ -405,28 +408,220 @@ function funcTradeCurrent() {
     }
 }
 
+function funcTradeAmount() {
+    //Get Units
+    var units = extractUnitsRecursivly();
+    var sortedUnits = sortListOfUnits(units);
+
+    //List all units
+    //listUnit(units);
+    listUnitOptimized(sortedUnits, (units, balance) => {
+        view_console.printCode("USER_INFO", "UsInf0092", appArgs.ammount);
+
+        var objAmountReaturnData = {units: [], amount: 0.0};
+
+        if (balance * 1024 < appArgs.ammount) {
+            //Not enough
+            view_console.printCode("WARNING", "Warn0031");
+            funcExit();
+        } else if (balance * 1024 === appArgs.ammount) {
+            //Use all units
+            objAmountReaturnData.units = units;
+        } else {
+            //Get amount
+            objAmountReaturnData = nstAmmount.encodeAmount(units, appArgs.ammount);
+            if (objAmountReaturnData.amount * 1024 > appArgs.ammount) {
+                view_console.printCode("WARNING", "Warn0032", objAmountReaturnData.amount * 1024);
+                funcExit();
+            }
+        }
+
+        //Request Ownerless
+        helperFunctionOfAmounTrading(objAmountReaturnData.units, () => {
+            view_console.printCode("USER_INFO", "UsInf0092");
+            helperFunctionForExportingOfAmountTrading(objAmountReaturnData);
+            funcExit();
+        });
+    });
+}
+
+function helperFunctionForExportingOfAmountTrading(objAmountReaturnData) {
+    var arrUnitsContent = [];
+
+    //Read allunits and store to array
+    for (var unitPath of objAmountReaturnData.units) {
+        arrUnitsContent.push(modFs.readFileSync(unitPath, "utf-8"));
+    }
+
+    //Decide to encrypt
+    if (appArgs.addrMin !== undefined) {
+        //Encrypt unit which is in BS58 with new owner address
+        var encData = encryptor.encryptFilePublicKey(JSON.stringify(arrUnitsContent), Buffer.from(Bs58.decode(AddressGen.convertHexDashToBS58(appArgs.addrMin))));
+
+        //Preapare data for storing
+        var fsData = {};
+        fsData['addr'] = keyPair.digitalAddress;
+        fsData['unit'] = encData;
+
+    } else {
+        var fsData = arrUnitsContent;
+    }
+
+    //Save to filsystem
+    modFs.writeFileSync(`${appArgs.fileOutput}_${objAmountReaturnData.amount * 1024}${exConfig.minerExtensions.unitsPack}`, Bs58.encode(Buffer.from(JSON.stringify(fsData), "utf-8")).toString());
+}
+
+function helperFunctionOfAmounTrading(arrUnitPaths, funcCallback) {
+    //Copy in local stack
+    var arrUnitPaths = JSON.parse(JSON.stringify(arrUnitPaths));
+
+    //Start scheduled program
+    scheduler_10ms = setInterval(main10ms, 10);
+    currentState = exConfig.minerStates.eStep_CurrentReleaseOwnerless;
+
+    function main10ms() {
+        switch (currentState) {
+            case exConfig.minerStates.eStep_CurrentReleaseOwnerless:
+                //Get key and address
+                getKeyPair();
+                //Init Connections
+                dnsInitialization();
+                //Clean previous use of var
+                appArgs.addrOp = undefined;
+                currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
+                break;
+
+            case exConfig.minerStates.eStep_GetDICE_FromArray:
+                if (arrUnitPaths !== undefined && arrUnitPaths.length > 0) {
+                    // Read File to DICE Unit
+                    var file = modFs.readFileSync(arrUnitPaths.pop(), "utf8");
+                    DICE = DICE.fromBS58(file);
+
+                    //Read address of operator
+                    var addrOpL = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+
+                    if (addrOpL !== appArgs.addrOp) {
+                        //Get Address from Unit
+                        appArgs.addrOp = addrOpL;
+
+                        //Request exchanging of certificates
+                        currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                    } else {
+                        currentState =
+                                appArgs.addrMin !== undefined ?
+                                exConfig.minerStates.eStep_CurrentOwnerClaimToServer : // TRUE
+                                exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer; // FALSE
+                    }
+                } else {
+                    currentState = exConfig.minerStates.eExit_FromApp;
+                }
+                break;
+
+            case exConfig.minerStates.eStep_DnsBinderWait:
+                if (isTcpReady) {
+                    continueInitconnection();
+                    currentState = exConfig.minerStates.eStep_ExchangeCertificates;
+                }
+                break;
+
+            case exConfig.minerStates.eStep_ExchangeCertificates:
+                executeExchangeCertificate(
+                        appArgs.addrMin !== undefined ?
+                        exConfig.minerStates.eStep_CurrentOwnerClaimToServer : // TRUE
+                        exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer); // FALSE
+                break;
+
+            case exConfig.minerStates.eStep_CurrentReleaseOwnerlessToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    var claimData = {};
+                    //Set DICE Unit to Dice validatior
+                    DICEValue.setDICEProtoFromUnit(DICE);
+
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET CurrentReleaseOwnerless", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
+                });
+                break;
+
+            case exConfig.minerStates.eStep_CurrentOwnerClaimToServer:
+                requestToServer(keyPair.digitalAddress,
+                        (addr) => {
+                    DICEValue.setDICEProtoFromUnit(DICE);
+                    var claimData = {};
+                    claimData["newOwner"] = AddressGen.convertHexDashToBS58(appArgs.addrMin);
+                    claimData["diceProto"] = DICEValue.getDICEProto().toBS58();
+                    var encryptedData = encryptor.encryptDataPublicKey(JSON.stringify(claimData), Buffer.from(Bs58.decode(appArgs.addrOp)));
+                    TCPClient.Request("SET CurrentOwnerClaim", addr, encryptedData);
+                },
+                        (response) => {
+                    printServerReturnData(response);
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
+                });
+                break;
+
+            case exConfig.minerStates.eExit_FromApp:
+                clearInterval(scheduler_10ms);
+                funcCallback();
+                break;
+
+            default:
+                throw "Application has Improper state !";
+        }
+    }
+}
+
 function funcTradeNew() {
     //Start scheduled program
     scheduler_10ms = setInterval(main10ms, 10);
     currentState = exConfig.minerStates.eStep_NewOwnerTrade;
 
+    //Local vars
+    var bIsPacket = false;
+
     function main10ms() {
         switch (currentState) {
             case exConfig.minerStates.eStep_NewOwnerTrade:
-                try {
-                    newOwnerTrade();
-                } catch (e) {
-                    // Try as normal DICE
-                    // Read File to DICE Unit
-                    var file = modFs.readFileSync(appArgs.diceUnit, "utf8");
-                    DICE = DICE.fromBS58(file);
 
-                    //Get key and address
-                    getKeyPair();
+                //Get key and address
+                getKeyPair();
+
+                //Read data from file input
+                bIsPacket = newOwnerTrade();
+
+                //Check is it packet 
+                if (!bIsPacket) {
+                    getAddrOperatorFromDICEUnit();
+                    dnsInitialization();
+                    currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                } else {
+                    //received data is packet of units
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
                 }
-                getAddrOperatorFromDICEUnit();
-                dnsInitialization();
-                currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                break;
+
+            case exConfig.minerStates.eStep_GetDICE_FromArray:
+                if (arrUnitsPacket !== undefined && arrUnitsPacket.length > 0) {
+                    DICE = DICE.fromBS58(arrUnitsPacket.pop());
+                    var addrOpL = Bs58.encode(Buffer.from(DICE.addrOperator, "hex")).toString();
+
+                    //Check for different operator in units set
+                    if (addrOpL !== appArgs.addrOp) {
+                        getAddrOperatorFromDICEUnit();
+                        dnsInitialization();
+                        currentState = exConfig.minerStates.eStep_DnsBinderWait;
+                    } else {
+                        currentState = exConfig.minerStates.eStep_NewOwnerClaimToServer;
+                    }
+
+                    dnsInitialization();
+                } else {
+                    funcExit();
+                }
                 break;
 
             case exConfig.minerStates.eStep_DnsBinderWait:
@@ -460,7 +655,7 @@ function funcTradeNew() {
                     } else {
                         saveDICEToFile(appArgs.fileOutput);
                     }
-                    currentState = exConfig.minerStates.eExit_FromApp;
+                    currentState = exConfig.minerStates.eStep_GetDICE_FromArray;
                 });
                 break;
 
@@ -589,7 +784,11 @@ function funcListUnits() {
 
     //List all units
     //listUnit(units);
-    listUnitOptimized(sortedUnits);
+    listUnitOptimized(sortedUnits, (unitsData, balance) => {
+        printListOfUnits(unitsData);
+        view_console.printCode("USER_INFO", "UsInf0090", balance);
+        funcExit();
+    });
 }
 
 function funcHelp() {
@@ -799,7 +998,7 @@ function continueInitconnection() {
             currentState = exConfig.minerStates.eExit_FromApp;
         }, view_console);
     } catch (e) {
-        view_console.printCode("ERROR", "Err0008", e);
+        view_console.printCode("ERROR", "Err0008", e + appArgs.addrOp);
         funcExit();
     }
 }
@@ -896,25 +1095,49 @@ function curOwnerTrade() {
 //Miner 2 receives
 function newOwnerTrade() {
 
+    //Returned Data
+    var bIsPacket = false;
+
     //Get KeyPair
     getKeyPair();
 
     //Read DICE Unit from FS
     var DiceFileJSON = modFs.readFileSync(appArgs.diceUnit, "utf8");
 
-    //Parse file from object
-    var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
+    //Try to decrypt DICE Unit
+    try {
+        //Parse file from object
+        var DiceFile = JSON.parse(Bs58.decode(DiceFileJSON));
 
-    //Encrypt Hash with new owner address
-    var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
+        //Encrypt Hash with new owner address
+        var decoded = encryptor.decryptFilePublicKey(DiceFile.unit, Buffer.from(Bs58.decode(DiceFile.addr)));
 
-    //Logic for application is to trade an already mined unit which is stored in FS
-    DICE = DICE.fromBS58(decoded.toString());
+        //Check is it packet or signle unit
+        try {
+            arrUnitsPacket = JSON.parse(decoded);
+            if (Array.isArray(arrUnitsPacket)) {
+                bIsPacket = true;
+            }
+        } catch (ex) {
+            //Logic for application is to trade an already mined unit which is stored in FS
+            DICE = DICE.fromBS58(decoded.toString());
+        }
 
-    //Hash of Unit
-    var hashOfUnit = DiceCalculatorL.getSHA3OfUnit(DICE);
+    } catch (ex) {
+        //Check is it packet or signle unit
+        try {
+            arrUnitsPacket = JSON.parse(Bs58.decode(DiceFileJSON));
+            if (Array.isArray(arrUnitsPacket)) {
+                bIsPacket = true;
+            }
+        } catch (ex) {
+            // Try as normal DICE
+            // Read File to DICE Unit
+            DICE = DICE.fromBS58(DiceFileJSON);
+        }
+    }
 
-    return hashOfUnit;
+    return bIsPacket;
 }
 
 function printServerReturnData(data) {
@@ -1289,7 +1512,7 @@ function listUnit(units) {
     }
 }
 
-function listUnitOptimized(units) {
+function listUnitOptimized(units, funcCallback) {
     var fileIndex = 0;
     var balance = 0;
     var valData = {k: undefined, N: undefined};
@@ -1393,9 +1616,8 @@ function listUnitOptimized(units) {
                         currentState = states.eState_InitConnection;
                     }
                 } else {
-                    printListOfUnits(unitsData);
-                    view_console.printCode("USER_INFO", "UsInf0090", balance);
-                    funcExit();
+                    clearInterval(scheduler_10ms);
+                    funcCallback(unitsData, balance);
                 }
 
                 break;

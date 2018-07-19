@@ -149,30 +149,48 @@ describe('General functional tests', function () {
                 {args: ['-eK', "exportedKeys"], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
-                        /*{args: ['-cc', './units/testUnit', '76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718'], expected: 'UsInf0073', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-v', `./units/testUnit${minerConfig.minerExtensions.unit}`], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-to', `./units/testUnit${minerConfig.minerExtensions.unit}`], expected: 'UsInf0075', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-r', `./units/testUnit${minerConfig.minerExtensions.unit}`], expected: 'Warn0028', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-tn', `./units/testUnit${minerConfig.minerExtensions.unit}`, `./units/testUnit${minerConfig.minerExtensions.unit}`], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-b', `./units/`], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-lU', `./units/`], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }},
-                         {args: ['-tc', `./units/testUnit${minerConfig.minerExtensions.unit}`, "./units/encrypted", 'd8f54-4fe68-98060-78b6d-bbbf3-1908b-473de-ed2b2'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
-                         return true;
-                         }}*/
+                /*{args: ['-cc', './units/testUnit', '76640-bcfe5-47604-75a2e-c0a6c-90df2-c39ef-97718'], expected: 'UsInf0073', unExpected: 'Err', specificExec: function (appReturnedData) {
+                 return true;
+                 }},*/
+                {args: ['-v', `./trading/units/Sender1/CI_Unit.dice`, './trading/keys/Sender1'], expected: '', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-to', `./trading/units/Sender1/CI_Unit.dice`, './trading/keys/Sender1'], expected: 'UsInf0075', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-r', `./trading/units/Sender1/CI_Unit.dice`, './trading/keys/Sender1'], expected: 'Warn0028', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-tn', `./trading/units/Sender1/CI_Unit.dice`, `./trading/units/Sender2/CI_Unit`, './trading/keys/Sender2'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-b', `./trading/units/Sender1/`, './trading/keys/Sender1'], expected: `${14 / 1024}`, unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-lU', `./trading/units/Sender1/`, './trading/keys/Sender1'], expected: '16404-1528c-a60d3-e8054-1b9f1-539d7-68361-4616d', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-tc', `./trading/units/Sender2/CI_Unit.dice`, `./trading/units/Sender2/CI_Unit`, '16404-1528c-a60d3-e8054-1b9f1-539d7-68361-4616d', './trading/keys/Sender2'], expected: 'UsInf0075', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-tn', `./trading/units/Sender2/CI_Unit.diceEnc`, `./trading/units/Sender1/CI_Unit`, './trading/keys/Sender1'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        //Delete units from Sender2
+                        modFs.unlinkSync(`./trading/units/Sender2/CI_Unit.dice`);
+                        modFs.unlinkSync(`./trading/units/Sender2/CI_Unit.diceEnc`);
+                        return true;
+                    }},
+                {args: ['-ta', './trading/units/Sender1/', '6', './trading/units/Sender1/CI_Packet', '', './trading/keys/Sender1'], expected: 'UsInf0075', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-tn', `./trading/units/Sender1/CI_Packet_6.dicePack`, `./trading/units/Sender2/CI_Unit`, './trading/keys/Sender2'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-ta', './trading/units/Sender2/', '6', './trading/units/Sender2/CI_Packet', '16404-1528c-a60d3-e8054-1b9f1-539d7-68361-4616d', './trading/keys/Sender2'], expected: 'UsInf0075', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }},
+                {args: ['-tn', `./trading/units/Sender2/CI_Packet_6.dicePack`, `./trading/units/Sender1/CI_Unit`, './trading/keys/Sender1'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
+                        return true;
+                    }}
             ];
 
     before(function () {
@@ -182,17 +200,33 @@ describe('General functional tests', function () {
             });
         } catch (ex) {
         }
+
+        try {
+            modFs.unlinkSync('./trading/units/Sender1/CI_Unit.5.dice');
+            modFs.unlinkSync('./trading/units/Sender1/CI_Unit.4.dice');
+            modFs.unlinkSync('./trading/units/Sender1/CI_Unit.3.dice');
+            modFs.unlinkSync('./trading/units/Sender1/CI_Packet_6.dicePack');
+            modFs.readdirSync('./trading/units/Sender2/').forEach(file => {
+                modFs.unlinkSync(`./trading/units/Sender2/${file}`);
+            });
+        } catch (ex) {
+        }
+        
+        //Create folder for second sender
+        if(!modFs.existsSync('./trading/units/Sender2/')){
+            modFs.mkdirSync('./trading/units/Sender2/');
+        }
+    });
+    
+    it.skip('Check is operator Valid', function () {
+        var operatorExecutor = child_process.spawnSync(node, [operatorApp, "-ver"], {stdio: ['pipe', 'pipe', 'pipe']});
+        var data = operatorExecutor.stdout.toString();
+
+        if (data.length === 0) {
+            throw new Error("Operator application is not valid");
+        }
     });
 
-    /*   it('Check is operator Valid', function () {
-     var operatorExecutor = child_process.spawnSync(node, [operatorApp, "-ver"], {stdio: ['pipe', 'pipe', 'pipe']});
-     var data = operatorExecutor.stdout.toString();
-     
-     if (data.length === 0) {
-     throw new Error("Operator application is not valid");
-     }
-     });
-     */
 
     generalTest.forEach(function (test) {
         it('Check properly executon of ' + test.args[0], function () {
@@ -205,7 +239,10 @@ describe('General functional tests', function () {
             var data = minerAppExecVersion.stdout.toString();
 
             //Add return data from execution
+            addContext(this, {title: "Execution ERROR report", value: minerAppExecVersion.stderr.toString()});
             addContext(this, {title: "Execution report", value: data});
+
+            //Print everything
 
             //Real tests
             if (test.expected !== '' && data.indexOf(test.expected) === -1) {
@@ -222,44 +259,44 @@ describe('General functional tests', function () {
 
         });
     });
-    /* 
-     it('Check is all commands covert', function () {
-     var covert = [];
-     var unCovert = [];
-     var duplicated = [];
-     for (let command of commands) {
-     for (let test of generalTest) {
-     if (command.args[0] === test.args[0]) {
-     if (covert.indexOf(command.args[0]) === -1) {
-     covert.push(command.args[0]);
-     } else {
-     duplicated.push(command.args[0]);
-     }
-     }
-     }
-     
-     if (unCovert.indexOf(command.args[0]) === -1 &&
-     covert.indexOf(command.args[0]) === -1) {
-     unCovert.push(command.args[0]);
-     } else {
-     // The command already exist
-     }
-     }
-     
-     if (unCovert.length > 0) {
-     throw new Error(
-     `Not all commands covert  
+
+    it.skip('Check is all commands covered', function () {
+        var covert = [];
+        var unCovert = [];
+        var duplicated = [];
+        for (let command of commands) {
+            for (let test of generalTest) {
+                if (command.args[0] === test.args[0]) {
+                    if (covert.indexOf(command.args[0]) === -1) {
+                        covert.push(command.args[0]);
+                    } else {
+                        duplicated.push(command.args[0]);
+                    }
+                }
+            }
+
+            if (unCovert.indexOf(command.args[0]) === -1 &&
+                    covert.indexOf(command.args[0]) === -1) {
+                unCovert.push(command.args[0]);
+            } else {
+                // The command already exist
+            }
+        }
+
+        if (unCovert.length > 0) {
+            throw new Error(
+                    `Not all commands covert  
      Covert ${covert.length} / Expected ${commands.length} 
      Covert commands: ${covert}
      Uncovert commands: ${unCovert}
      Duplicated commands: ${duplicated}`);
-     }
-     
-     if (duplicated.length > 0) {
-     throw new Error(`Duplicated commands: ${duplicated}`);
-     }
-     
-     });
-     */
+        }
+
+        if (duplicated.length > 0) {
+            throw new Error(`Duplicated commands: ${duplicated}`);
+        }
+
+    });
+
 });
 
