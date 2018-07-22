@@ -786,7 +786,7 @@ function funcListUnits() {
     //listUnit(units);
     listUnitOptimized(sortedUnits, (unitsData, balance) => {
         printListOfUnits(unitsData);
-        view_console.printCode("USER_INFO", "UsInf0090", balance);
+        view_console.printCode("USER_INFO", "UsInf0090", balance*1024);
         funcExit();
     });
 }
@@ -1389,7 +1389,7 @@ function validateUnitOptimized(units) {
                         currentState = states.eState_InitConnection;
                     }
                 } else {
-                    view_console.printCode("USER_INFO", "UsInf0090", balance);
+                    view_console.printCode("USER_INFO", "UsInf0090", balance*1024);
                     funcExit();
                 }
 
@@ -1633,7 +1633,7 @@ function printListOfUnits(unitsData) {
     var index = 1;
     for (var unit in unitsData) {
         var unitData = unitsData[unit];
-        view_console.print(`${(index++)} # ${unitData.name} # ${unitData.operator} # ${unitData.owner} # ${unitData.value}`);
+        view_console.print(`${(index++)} # ${unitData.name} # ${unitData.operator} # ${unitData.owner} # ${unitData.value*1024}`);
     }
 }
 

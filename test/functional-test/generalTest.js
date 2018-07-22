@@ -164,7 +164,7 @@ describe('General functional tests', function () {
                 {args: ['-tn', `./trading/units/Sender1/CI_Unit.dice`, `./trading/units/Sender2/CI_Unit`, './trading/keys/Sender2'], expected: 'UsInf0076', unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
-                {args: ['-b', `./trading/units/Sender1/`, './trading/keys/Sender1'], expected: `${14 / 1024}`, unExpected: 'Err', specificExec: function (appReturnedData) {
+                {args: ['-b', `./trading/units/Sender1/`, './trading/keys/Sender1'], expected: `${14}`, unExpected: 'Err', specificExec: function (appReturnedData) {
                         return true;
                     }},
                 {args: ['-lU', `./trading/units/Sender1/`, './trading/keys/Sender1'], expected: '16404-1528c-a60d3-e8054-1b9f1-539d7-68361-4616d', unExpected: 'Err', specificExec: function (appReturnedData) {
